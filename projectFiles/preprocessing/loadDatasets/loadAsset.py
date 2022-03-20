@@ -1,5 +1,5 @@
-from helpers.SimplificationData import *
-from helpers.DatasetToLoad import *
+from projectFiles.helpers.SimplificationData import *
+
 
 def loadAsset():
     baseLoc = "../../datasets/asset"

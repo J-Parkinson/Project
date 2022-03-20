@@ -1,4 +1,4 @@
-from helpers.DatasetToLoad import datasetToLoad
+from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from nltk.tokenize import word_tokenize
 
 class simplificationPair:

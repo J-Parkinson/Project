@@ -1,10 +1,10 @@
-from helpers.Anonymisation import anonymisation
-from helpers.SimplificationData import *
-from helpers.DatasetToLoad import *
+from projectFiles.helpers.Anonymisation import anonymisation
+from projectFiles.helpers.SimplificationData import *
 
-def loadWikiLarge(isAnonymised):
-    baseLoc = f"../../datasets/wikilarge/wiki.full.aner{'.ori' if isAnonymised.value else ''}"
-    dataset = datasetToLoad.wikilarge
+
+def loadWikiSmall(isAnonymised):
+    baseLoc = f"../../datasets/wikismall/PWKP_108016.tag.80.aner{'.ori' if isAnonymised.value else ''}"
+    dataset = datasetToLoad.wikismall
     with open(f'{baseLoc}.train.src', 'r', encoding='utf-8') as trainOrig:
         trainOrig = trainOrig.read().splitlines()
     trainPairs = []
@@ -32,6 +32,6 @@ def loadWikiLarge(isAnonymised):
     dataset = simplificationDataset(dataset, trainPairs, validPairs, testPairs)
     return dataset
 
-x = loadWikiLarge(anonymisation.original).train[0]
+x = loadWikiSmall(anonymisation.original).train[4]
 print(x.original)
 print(x.simple)

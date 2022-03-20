@@ -1,8 +1,5 @@
-import os
-
-from helpers.DatasetSplits import datasetSplits
-from helpers.SimplificationData import *
-from helpers.DatasetToLoad import *
+from projectFiles.helpers.DatasetSplits import datasetSplits
+from projectFiles.helpers.SimplificationData import *
 from os import walk
 
 def loadNewsala(restrictLanguage=None, restrictMinDiffBetween=None, fullSimplifyOnly=False):
