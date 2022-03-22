@@ -2,7 +2,7 @@ from projectFiles.helpers.DatasetSplits import datasetSplits
 from projectFiles.helpers.SimplificationData import *
 from os import walk
 
-def loadNewsala(restrictLanguage=None, restrictMinDiffBetween=None, fullSimplifyOnly=False):
+def loadNewsala(restrictLanguage="en", restrictMinDiffBetween=None, fullSimplifyOnly=False):
     baseLoc = "../../datasets/newsala"
     dataset = datasetToLoad.newsala
 
@@ -62,7 +62,11 @@ def loadNewsala(restrictLanguage=None, restrictMinDiffBetween=None, fullSimplify
         else:
             everyPairTest += allPairs
 
-    dataset = simplificationDataset(dataset, everyPairTrain, everyPairDev, everyPairTest)
+    pairsTrain = simplificationDataset(everyPairTrain)
+    pairsDev = simplificationDataset(everyPairDev)
+    pairsTest = simplificationDataset(everyPairTest)
+
+    dataset = simplificationDatasets(dataset, pairsTrain, pairsDev, pairsTest)
     return dataset
 
 loadNewsala()

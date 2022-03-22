@@ -24,7 +24,11 @@ def loadAsset():
             setOfTestPairs = [simplificationPair(testOrigElem, testSimpElem, dataset) for testOrigElem, testSimpElem in zip(testOrig, testSimp)]
             pairsTest += setOfTestPairs
 
-    dataset = simplificationDataset(dataset, pairsTrain, pairsDev, pairsTest)
+    pairsTrain = simplificationDataset(pairsTrain)
+    pairsDev = simplificationDataset(pairsDev)
+    pairsTest = simplificationDataset(pairsTest)
+
+    dataset = simplificationDatasets(dataset, pairsTrain, pairsDev, pairsTest)
     return dataset
 
 x = loadAsset().train[0]

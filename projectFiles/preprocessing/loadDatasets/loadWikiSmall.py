@@ -29,7 +29,11 @@ def loadWikiSmall(isAnonymised):
         setOfTestPairs = [simplificationPair(testOrigElem, testSimpElem, dataset) for testOrigElem, testSimpElem in zip(testOrig, testSimp)]
         testPairs += setOfTestPairs
 
-    dataset = simplificationDataset(dataset, trainPairs, validPairs, testPairs)
+    pairsTrain = simplificationDataset(trainPairs)
+    pairsDev = simplificationDataset(validPairs)
+    pairsTest = simplificationDataset(testPairs)
+
+    dataset = simplificationDatasets(dataset, trainPairs, validPairs, testPairs)
     return dataset
 
 x = loadWikiSmall(anonymisation.original).train[4]

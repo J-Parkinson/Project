@@ -1,7 +1,10 @@
+import torch
+
 from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from nltk.tokenize import word_tokenize
+from torch.utils.data import Dataset
 
-class simplificationPair:
+class simplificationPair():
     def __init__(self, original, simple, dataset, simplicityFactor=(0,4), language="en"):
         self.original = original
         self.simple = simple
@@ -39,7 +42,25 @@ class simplificationPair:
             self.simple = self._removeEscapedBracketsFromSentenceWiki(self.simple)
         return
 
-class simplificationDataset:
+    def getData(self):
+        return {"original": self.original, "simplified": self.simple}
+
+class simplificationDataset(Dataset):
+    def _sortBySimplificationAmount(self):
+        return
+
+    def __init__(self, simplificationPairSet, sortBySimplificationAmount=False):
+        self.dataset = simplificationPairSet
+        if sortBySimplificationAmount:
+            self._sortBySimplificationAmount()
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        return self.dataset[idx].getData()
+
+class simplificationDatasets():
     def __init__(self, dataset, train, dev, test):
         self.dataset = dataset
         self.train = train
