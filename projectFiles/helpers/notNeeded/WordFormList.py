@@ -34,6 +34,41 @@ class wordFormSet:
                 return v1[:i]
         return v1[:i]
 
+    def getChange(self, w1, w2):
+        if w1 == w2:
+            return "NONE"
+        substitution = ""
+        if w1 == self.VB:
+            substitution += "VB_"
+        elif w1 == self.VBD:
+            substitution += "VBD_"
+        elif w1 == self.VBN:
+            substitution += "VBN_"
+        elif w1 == self.VBG:
+            substitution += "VBG_"
+        elif w1 == self.VBZ:
+            substitution += "VBZ_"
+        else:
+            return "NONE"
+        if w2 == self.VB:
+            substitution += "VB"
+        elif w2 == self.VBD:
+            substitution += "VBD"
+        elif w2 == self.VBN:
+            substitution += "VBN"
+        elif w2 == self.VBG:
+            substitution += "VBG"
+        elif w2 == self.VBZ:
+            substitution += "VBZ"
+        else:
+            return "NONE"
+
+        return substitution
+
+    def getAllWords(self):
+        return [self.VB, self.VBD, self.VBN, self.VBG, self.VBZ]
+
+
 class wordFormList:
     def __init__(self):
         self._location = "../../datasets/verb_forms/verb-form-vocab.txt"
@@ -49,9 +84,14 @@ class wordFormList:
                 currentPair = wordFormSet()
                 currentPair.updateWithCheck(dictToUse)
         self._allWords.append(currentPair)
-        self.dictionar
-
-
+        self.dictionary = {}
+        for word in self._allWords:
+            words = word.getAllWords()
+            for word1 in words:
+                for word2 in words:
+                    self.dictionary.setdefault(word1, {}).setdefault(word2, word.getChange(word1, word2))
+    def getSubstitution(self, w1, w2):
+        return self.dictionary[w1][w2]
 
 
 wordFormList()

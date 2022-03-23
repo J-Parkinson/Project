@@ -1,9 +1,13 @@
 from projectFiles.helpers.DatasetSplits import datasetSplits
 from projectFiles.helpers.SimplificationData import *
 from os import walk
+import pickle
 
-def loadNewsala(restrictLanguage="en", restrictMinDiffBetween=None, fullSimplifyOnly=False):
-    baseLoc = "../../datasets/newsala"
+def loadNewsala(loadPickleFile=True, pickleFile=True, restrictLanguage="en", restrictMinDiffBetween=None, fullSimplifyOnly=False, startLoc=""):
+    baseLoc = f"{startLoc}datasets/newsala"
+
+    if loadPickleFile:
+        return pickle.load(open(f"{baseLoc}/pickled.p", "rb"))
     dataset = datasetToLoad.newsala
 
     #Find names of every article in dataset
@@ -11,7 +15,6 @@ def loadNewsala(restrictLanguage="en", restrictMinDiffBetween=None, fullSimplify
 
     #Larger numbers are more simplified
     uniqueFilenamesAndLangs = list(set([".".join(filename.split(".", 2)[:2]) for filename in allFilenames]))
-    print(uniqueFilenamesAndLangs)
     uniqueFilenames = [filename.split(".")[0] for filename in uniqueFilenamesAndLangs]
     uniqueLangs = [filename.split(".")[1] for filename in uniqueFilenamesAndLangs]
 
@@ -67,6 +70,9 @@ def loadNewsala(restrictLanguage="en", restrictMinDiffBetween=None, fullSimplify
     pairsTest = simplificationDataset(everyPairTest)
 
     dataset = simplificationDatasets(dataset, pairsTrain, pairsDev, pairsTest)
+
+    if pickleFile:
+        pickle.dump(dataset, open(f"{baseLoc}/pickled.p", "wb"))
     return dataset
 
-loadNewsala()
+#loadNewsala()

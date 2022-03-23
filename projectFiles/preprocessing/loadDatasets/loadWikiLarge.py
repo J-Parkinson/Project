@@ -1,9 +1,14 @@
 from projectFiles.helpers.Anonymisation import anonymisation
 from projectFiles.helpers.SimplificationData import *
+import pickle
 
+def loadWikiLarge(loadPickleFile=True, pickleFile=True, isAnonymised=False, startLoc=""):
+    pickleLoc = f"{startLoc}datasets/wikilarge/"
+    baseLoc = pickleLoc + f"wiki.full.aner{'.ori' if not isAnonymised else ''}"
 
-def loadWikiLarge(isAnonymised):
-    baseLoc = f"../../datasets/wikilarge/wiki.full.aner{'.ori' if isAnonymised.value else ''}"
+    if loadPickleFile:
+        return pickle.load(open(f"{pickleLoc}/pickled{'ori' if not isAnonymised else ''}.p", "rb"))
+
     dataset = datasetToLoad.wikilarge
     with open(f'{baseLoc}.train.src', 'r', encoding='utf-8') as trainOrig:
         trainOrig = trainOrig.read().splitlines()
@@ -34,8 +39,11 @@ def loadWikiLarge(isAnonymised):
     pairsTest = simplificationDataset(testPairs)
 
     dataset = simplificationDatasets(dataset, pairsTrain, pairsDev, pairsTest)
+
+    if pickleFile:
+        pickle.dump(dataset, open(f"{pickleLoc}/pickled{'ori' if not isAnonymised else ''}.p", "wb"))
+
     return dataset
 
-x = loadWikiLarge(anonymisation.original).train[0]
-print(x.original)
-print(x.simple)
+#loadWikiLarge(loadPickleFile=False, pickleFile=True, isAnonymised=False, startLoc="../../../")
+#loadWikiLarge(loadPickleFile=False, pickleFile=True, isAnonymised=True, startLoc="../../../")

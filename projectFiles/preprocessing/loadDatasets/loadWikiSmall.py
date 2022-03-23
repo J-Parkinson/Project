@@ -1,9 +1,14 @@
 from projectFiles.helpers.Anonymisation import anonymisation
 from projectFiles.helpers.SimplificationData import *
+import pickle
 
+def loadWikiSmall(loadPickleFile=True, pickleFile=True, isAnonymised=False, startLoc=""):
+    pickleLoc = f"{startLoc}datasets/wikismall"
 
-def loadWikiSmall(isAnonymised):
-    baseLoc = f"../../datasets/wikismall/PWKP_108016.tag.80.aner{'.ori' if isAnonymised.value else ''}"
+    if loadPickleFile:
+        return pickle.load(open(f"{pickleLoc}/pickled{'ori' if not isAnonymised else ''}.p", "rb"))
+
+    baseLoc = pickleLoc + f"/PWKP_108016.tag.80.aner{'.ori' if not isAnonymised else ''}"
     dataset = datasetToLoad.wikismall
     with open(f'{baseLoc}.train.src', 'r', encoding='utf-8') as trainOrig:
         trainOrig = trainOrig.read().splitlines()
@@ -29,13 +34,16 @@ def loadWikiSmall(isAnonymised):
         setOfTestPairs = [simplificationPair(testOrigElem, testSimpElem, dataset) for testOrigElem, testSimpElem in zip(testOrig, testSimp)]
         testPairs += setOfTestPairs
 
-    pairsTrain = simplificationDataset(trainPairs)
-    pairsDev = simplificationDataset(validPairs)
-    pairsTest = simplificationDataset(testPairs)
+    trainPairs = simplificationDataset(trainPairs)
+    validPairs = simplificationDataset(validPairs)
+    testPairs = simplificationDataset(testPairs)
 
     dataset = simplificationDatasets(dataset, trainPairs, validPairs, testPairs)
+
+    if pickleFile:
+        pickle.dump(dataset, open(f"{pickleLoc}/pickled{'ori' if not isAnonymised else ''}.p", "wb"))
+
     return dataset
 
-x = loadWikiSmall(anonymisation.original).train[4]
-print(x.original)
-print(x.simple)
+#loadWikiSmall(loadPickleFile=False, pickleFile=True, isAnonymised=False, startLoc="../../../")
+#loadWikiSmall(loadPickleFile=False, pickleFile=True, isAnonymised=True, startLoc="../../../")

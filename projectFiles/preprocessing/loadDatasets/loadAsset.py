@@ -1,8 +1,12 @@
 from projectFiles.helpers.SimplificationData import *
+import pickle
 
+def loadAsset(loadPickleFile=True, pickleFile=False, startLoc=""):
+    baseLoc = f"{startLoc}datasets/asset"
 
-def loadAsset():
-    baseLoc = "../../datasets/asset"
+    if loadPickleFile:
+        return pickle.load(open(f"{baseLoc}/pickled.p", "rb"))
+
     dataset = datasetToLoad.asset
     with open(f'{baseLoc}/asset.valid.orig', 'r', encoding='utf-8') as validOrig:
         validOrig = validOrig.read().splitlines()
@@ -29,8 +33,7 @@ def loadAsset():
     pairsTest = simplificationDataset(pairsTest)
 
     dataset = simplificationDatasets(dataset, pairsTrain, pairsDev, pairsTest)
-    return dataset
 
-x = loadAsset().train[0]
-print(x.original)
-print(x.simple)
+    if pickleFile:
+        pickle.dump(dataset, open(f"{baseLoc}/pickled.p", "wb"))
+    return dataset
