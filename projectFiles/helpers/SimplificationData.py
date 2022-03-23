@@ -44,9 +44,15 @@ class simplificationPair():
             self.simple = self._removeEscapedBracketsFromSentenceWiki(self.simple)
         return
 
+    def _safeSearch(self, indices, word, maxIndices=75000):
+        try:
+            return indices[word.lower()]
+        except:
+            return maxIndices
+
     def addIndices(self, indices, maxIndices=75000):
-        self.originalIndices = [min(indices[word.lower()], maxIndices) for word in self.original]
-        self.simpleIndices = [min(indices[word.lower()], maxIndices) for word in self.simple]
+        self.originalIndices = [min(self._safeSearch(indices, word, maxIndices), maxIndices) for word in self.original]
+        self.simpleIndices = [min(self._safeSearch(indices, word, maxIndices), maxIndices) for word in self.simple]
 
     def getIndices(self):
         if self.originalIndices and self.simpleIndices:

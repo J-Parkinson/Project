@@ -35,7 +35,8 @@ def simplificationDataToPyTorch(dataset):
                         "dev": [processPair(val) for val in datasetLoaded.dev],
                         "test": [processPair(val) for val in datasetLoaded.test]}
 
-    print(datasetProcessed)
+    print(datasetProcessed["train"][0][0])
+    print(datasetLoaded.train[0]["original"])
 
 
 simplificationDataToPyTorch(datasetToLoad.wikismall)
