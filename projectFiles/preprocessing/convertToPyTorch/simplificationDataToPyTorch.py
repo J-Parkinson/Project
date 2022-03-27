@@ -14,29 +14,30 @@ def processPair(pair):
 
     originalTorch = torch.tensor(originalIndices, dtype=torch.long, device=device).view(-1, 1)
     simpleTorch = torch.tensor(simpleIndices, dtype=torch.long, device=device).view(-1, 1)
-    print(originalTorch)
-    print(pair['original'])
 
     return (originalTorch, simpleTorch)
 
-def simplificationDataToPyTorch(dataset):
+def simplificationDataToPyTorch(dataset, maxIndices=75000, startLoc="../../../"):
     if dataset == datasetToLoad.asset:
-        datasetLoaded = loadAsset(startLoc="../../../")
+        print("Loading ASSET")
+        datasetLoaded = loadAsset(startLoc=startLoc)
     elif dataset == datasetToLoad.newsala:
-        datasetLoaded = loadNewsala(startLoc="../../../")
+        print("Loading Newsala")
+        datasetLoaded = loadNewsala(startLoc=startLoc)
     elif dataset == datasetToLoad.wikilarge:
-        datasetLoaded = loadWikiLarge(startLoc="../../../")
+        print("Loading WikiLarge")
+        datasetLoaded = loadWikiLarge(startLoc=startLoc)
     else:
-        datasetLoaded = loadWikiSmall(startLoc="../../../")
+        print("Loading WikiSmall")
+        datasetLoaded = loadWikiSmall(startLoc=startLoc)
 
-    datasetLoaded.addIndices(indices)
+    datasetLoaded.addIndices(indices, maxIndices=maxIndices)
 
     datasetProcessed = {"train": [processPair(val) for val in datasetLoaded.train],
                         "dev": [processPair(val) for val in datasetLoaded.dev],
                         "test": [processPair(val) for val in datasetLoaded.test]}
 
-    print(datasetProcessed["train"][0][0])
-    print(datasetLoaded.train[0]["original"])
 
+    return datasetProcessed
 
-simplificationDataToPyTorch(datasetToLoad.wikismall)
+#simplificationDataToPyTorch(datasetToLoad.wikismall)

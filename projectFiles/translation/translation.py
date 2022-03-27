@@ -78,10 +78,8 @@ models, respectively.
 
 **Requirements**
 """
-from __future__ import unicode_literals, print_function, division
 from io import open
 import unicodedata
-import string
 import re
 import random
 
@@ -91,6 +89,7 @@ from torch import optim
 import torch.nn.functional as F
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device.type)
 
 ######################################################################
 # Loading data files
@@ -333,7 +332,6 @@ class EncoderRNN(nn.Module):
     def __init__(self, input_size, hidden_size):
         super(EncoderRNN, self).__init__()
         self.hidden_size = hidden_size
-
         self.embedding = nn.Embedding(input_size, hidden_size)
         self.gru = nn.GRU(hidden_size, hidden_size)
 
@@ -630,6 +628,7 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, lear
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
     training_pairs = [tensorsFromPair(random.choice(pairs))
                       for i in range(n_iters)]
+    print(training_pairs[:2])
     criterion = nn.NLLLoss()
     print("Iterations begin...")
 

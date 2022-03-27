@@ -29,7 +29,7 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, deco
 
     decoder_hidden = encoder_hidden
 
-    use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
+    use_teacher_forcing = True if random() < teacher_forcing_ratio else False
 
     if use_teacher_forcing:
         # Teacher forcing: Feed the target as the next input
@@ -60,7 +60,7 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, deco
 
 
 
-def trainIters(encoder, decoder, trainingData, print_every=1000, plot_every=100, learning_rate=0.01):
+def trainIters(encoder, decoder, trainingData, datasetName="", locationToSaveTo="trainedModels/", print_every=150, plot_every=100, learning_rate=0.01, startIter=0):
     timer = Timer()
     plot_losses = []
     print_loss_total = 0  # Reset every print_every
@@ -69,8 +69,15 @@ def trainIters(encoder, decoder, trainingData, print_every=1000, plot_every=100,
     encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
     criterion = nn.NLLLoss()
+    minLoss = 999999999999999999999999999999999999
+    optimalEncoder = None
+    optimalDecoder = None
+    fileSaveName = f"{locationToSaveTo}optimal_{datasetName}_{timer.getStartTime()}".replace(":", "")
+    notFirstYet=False
 
     for i, pair in enumerate(trainingData):
+        if i < startIter:
+            continue
         input_tensor = pair[0]
         target_tensor = pair[1]
 
@@ -80,10 +87,26 @@ def trainIters(encoder, decoder, trainingData, print_every=1000, plot_every=100,
         plot_loss_total += loss
 
         if (i+1) % print_every == 0:
-            print_loss_avg = print_loss_total / print_every
-            print_loss_total = 0
-            timer.printTimeDiff()
-            print(f"loss average: {print_loss_avg}")
+            if not notFirstYet:
+                notFirstYet = True
+            else:
+                print_loss_avg = print_loss_total / print_every
+                minLoss = min(minLoss, print_loss_total)
+                if minLoss == print_loss_total:
+                    optimalEncoder = encoder.state_dict()
+                    optimalDecoder = decoder.state_dict()
+                    with open(f"{fileSaveName}.txt", "w+") as file:
+                        file.write(f"Iteration {i}\nDataset: {datasetName}")
+                    torch.save(optimalEncoder, f"{fileSaveName}_encoder.pt")
+                    torch.save(optimalDecoder, f"{fileSaveName}_decoder.pt")
+                print_loss_total = 0
+                print("_____________________")
+                print(f"Iteration {i+1}")
+                timer.printTimeDiff()
+                timer.printTimeBetweenChecks()
+                timer.calculateTimeLeftToRun(i, len(trainingData))
+                print(f"Loss average: {print_loss_avg}")
+                print(f"Min avg loss per {print_every} iterations: {minLoss / print_every}")
 
         if (i+1) % plot_every == 0:
             plot_loss_avg = plot_loss_total / plot_every
@@ -91,3 +114,5 @@ def trainIters(encoder, decoder, trainingData, print_every=1000, plot_every=100,
             plot_loss_total = 0
 
     #showPlot(plot_losses)
+    return optimalEncoder, optimalDecoder
+

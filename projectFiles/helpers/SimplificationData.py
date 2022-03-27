@@ -48,11 +48,12 @@ class simplificationPair():
         try:
             return indices[word.lower()]
         except:
-            return maxIndices
+            #indices start at 0
+            return maxIndices - 1
 
     def addIndices(self, indices, maxIndices=75000):
-        self.originalIndices = [min(self._safeSearch(indices, word, maxIndices), maxIndices) for word in self.original]
-        self.simpleIndices = [min(self._safeSearch(indices, word, maxIndices), maxIndices) for word in self.simple]
+        self.originalIndices = [min(self._safeSearch(indices, word, maxIndices-2), maxIndices-3)+2 for word in self.original]
+        self.simpleIndices = [min(self._safeSearch(indices, word, maxIndices-2), maxIndices-3)+2 for word in self.simple]
 
     def getIndices(self):
         if self.originalIndices and self.simpleIndices:
@@ -84,10 +85,10 @@ class simplificationDatasets():
         self.dev = dev
         self.test = test
 
-    def addIndices(self, indices):
+    def addIndices(self, indices, maxIndices=75000):
         for pair in self.train.dataset:
-            pair.addIndices(indices)
+            pair.addIndices(indices, maxIndices)
         for pair in self.dev.dataset:
-            pair.addIndices(indices)
+            pair.addIndices(indices, maxIndices)
         for pair in self.test.dataset:
-            pair.addIndices(indices)
+            pair.addIndices(indices, maxIndices)

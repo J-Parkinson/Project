@@ -1,15 +1,15 @@
 import torch
 import torch.nn as nn
-from torch import optim
 import torch.nn.functional as F
-from constants import device
+from constants import device, maxLengthSentence
+
 
 #https://pytorch.org/tutorials/intermediate/seq2seq_translation_tutorial.html
 class EncoderRNN(nn.Module):
     def __init__(self, input_size, hidden_size):
+        print(input_size)
         super(EncoderRNN, self).__init__()
         self.hidden_size = hidden_size
-
         self.embedding = nn.Embedding(input_size, hidden_size)
         self.gru = nn.GRU(hidden_size, hidden_size)
 
@@ -23,11 +23,11 @@ class EncoderRNN(nn.Module):
         return torch.zeros(1, 1, self.hidden_size, device=device)
 
 class AttnDecoderRNN(nn.Module):
-    def __init__(self, hidden_size, output_size, dropout_p=0.1, max_length=MAX_LENGTH):
+    def __init__(self, hidden_size, output_size, dropout=0.1, max_length=maxLengthSentence):
         super(AttnDecoderRNN, self).__init__()
         self.hidden_size = hidden_size
         self.output_size = output_size
-        self.dropout_p = dropout_p
+        self.dropout_p = dropout
         self.max_length = max_length
 
         self.embedding = nn.Embedding(self.output_size, self.hidden_size)
