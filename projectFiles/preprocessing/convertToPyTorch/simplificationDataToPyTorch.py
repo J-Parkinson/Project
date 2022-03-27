@@ -37,7 +37,6 @@ def simplificationDataToPyTorch(dataset, maxIndices=75000, startLoc="../../../")
                         "dev": [processPair(val) for val in datasetLoaded.dev],
                         "test": [processPair(val) for val in datasetLoaded.test]}
 
-
     return datasetProcessed
 
 #simplificationDataToPyTorch(datasetToLoad.wikismall)

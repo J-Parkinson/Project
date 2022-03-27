@@ -3,7 +3,7 @@ from projectFiles.helpers.SimplificationData import *
 from os import walk
 import pickle
 
-def loadNewsala(loadPickleFile=True, pickleFile=True, restrictLanguage="en", restrictMinDiffBetween=None, fullSimplifyOnly=False, startLoc=""):
+def loadNewsala(loadPickleFile=True, pickleFile=True, restrictLanguage="en", fullSimplifyOnly=False, startLoc=""):
     baseLoc = f"{startLoc}datasets/newsala"
 
     if loadPickleFile:
@@ -39,18 +39,7 @@ def loadNewsala(loadPickleFile=True, pickleFile=True, restrictLanguage="en", res
         for file in allSimplificationsFiles:
             file.close()
 
-        allPairs = []
-        for i in range(len(allSimplifications) - 1):
-            for j in range(i+1, len(allSimplifications)):
-                if restrictMinDiffBetween and (j-i) <= restrictMinDiffBetween:
-                    continue
-                if fullSimplifyOnly and j != len(allSimplifications) - 1 and i != 0:
-                    continue
-                original = allSimplifications[i]
-                simplified = allSimplifications[j]
-                #Here we make all pairs for a given simplification level pair
-                pairs = [simplificationPair(orig, simp, dataset, simplicityFactor=(i,j), language=lang) for orig, simp in zip(original, simplified)]
-                allPairs += pairs
+        simplificationGroup = simplificationSet(allSimplifications[0], [allSimplifications[-1]] if fullSimplifyOnly else allSimplifications[1:], dataset, language=lang)
 
         datasetToAddTo = datasetSplits.train
         if len(allSimplifications) > 5:
@@ -59,11 +48,11 @@ def loadNewsala(loadPickleFile=True, pickleFile=True, restrictLanguage="en", res
             datasetToAddTo = datasetSplits.test
 
         if datasetToAddTo == datasetSplits.train:
-            everyPairTrain += allPairs
+            everyPairTrain.append(simplificationGroup)
         elif datasetToAddTo == datasetSplits.dev:
-            everyPairDev += allPairs
+            everyPairDev.append(simplificationGroup)
         else:
-            everyPairTest += allPairs
+            everyPairTest.append(simplificationGroup)
 
     pairsTrain = simplificationDataset(everyPairTrain)
     pairsDev = simplificationDataset(everyPairDev)

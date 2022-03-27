@@ -4,15 +4,14 @@ from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from nltk.tokenize import word_tokenize
 from torch.utils.data import Dataset
 
-class simplificationPair():
-    def __init__(self, original, simple, dataset, simplicityFactor=(0,4), language="en"):
+class simplificationSet():
+    def __init__(self, original, allSimple, dataset, language="en"):
         self.original = original
-        self.simple = simple
+        self.allSimple = allSimple
         self._removeEscapedCharacters(dataset)
         self._makeReplacementsGEC()
         self._tokenise(dataset)
         self.dataset = dataset
-        self.givenSimplicityFactor = simplicityFactor
         self.calculatedSimplicityFactor = 0
         self.language = language
         self.originalIndices = None
@@ -21,10 +20,10 @@ class simplificationPair():
     def _tokenise(self, dataset):
         if dataset in [datasetToLoad.wikilarge, datasetToLoad.wikismall]:
             self.original = self.original.split(" ")
-            self.simple = self.simple.split(" ")
+            self.allSimple = self.allSimple.split(" ")
         else:
             self.original = word_tokenize(self.original)
-            self.simple = word_tokenize(self.simple)
+            self.allSimple = word_tokenize(self.allSimple)
         self.tokenized = True
 
     def _removeEscapedBracketsFromSentenceWiki(self, sentence):
@@ -35,13 +34,13 @@ class simplificationPair():
     def _makeReplacementsGEC(self):
         for (frm, to) in [("''", '"'), ("--", "-"), ("`", "'")]:
             self.original = self.original.replace(frm, to)
-            self.simple = self.simple.replace(frm, to)
+            self.allSimple = self.allSimple.replace(frm, to)
 
     #Run before tokenisation
     def _removeEscapedCharacters(self, dataset):
         if dataset in [datasetToLoad.wikilarge, datasetToLoad.wikismall]:
             self.original = self._removeEscapedBracketsFromSentenceWiki(self.original)
-            self.simple = self._removeEscapedBracketsFromSentenceWiki(self.simple)
+            self.allSimple = self._removeEscapedBracketsFromSentenceWiki(self.allSimple)
         return
 
     def _safeSearch(self, indices, word, maxIndices=75000):
@@ -53,14 +52,14 @@ class simplificationPair():
 
     def addIndices(self, indices, maxIndices=75000):
         self.originalIndices = [min(self._safeSearch(indices, word, maxIndices-2), maxIndices-3)+2 for word in self.original]
-        self.simpleIndices = [min(self._safeSearch(indices, word, maxIndices-2), maxIndices-3)+2 for word in self.simple]
+        self.simpleIndices = [min(self._safeSearch(indices, word, maxIndices-2), maxIndices-3) + 2 for word in self.allSimple]
 
     def getIndices(self):
         if self.originalIndices and self.simpleIndices:
             return {"original": self.originalIndices, "simple": self.simpleIndices}
 
     def getData(self):
-        return {"original": self.original, "simplified": self.simple,
+        return {"original": self.original, "simplified": self.allSimple,
                 "originalIndices": self.originalIndices, "simpleIndices": self.simpleIndices}
 
 class simplificationDataset(Dataset):

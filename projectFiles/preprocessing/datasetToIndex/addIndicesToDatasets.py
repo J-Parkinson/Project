@@ -20,7 +20,7 @@ datasets = [asset.train, asset.dev, asset.test,
 
 datasets = list(map(lambda x: x.dataset, datasets))
 datasetsOriginal = list(map(lambda x: list(map(lambda y: y.original, x)), datasets))
-datasetsSimple = list(map(lambda x: list(map(lambda y: y.simple, x)), datasets))
+datasetsSimple = list(map(lambda x: list(map(lambda y: y.allSimple, x)), datasets))
 
 datasetsOriginal = [item.lower() for sublist in datasetsOriginal for subsublist in sublist for item in subsublist]
 datasetsSimple = [item.lower() for sublist in datasetsSimple for subsublist in sublist for item in subsublist]
