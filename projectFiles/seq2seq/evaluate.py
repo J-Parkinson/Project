@@ -2,7 +2,8 @@ from random import random, choice
 
 import torch
 
-from projectFiles.seq2seq.constants import EOS, SOS, device, maxLengthSentence
+from projectFiles.helpers.DatasetSplits import datasetSplits
+from projectFiles.seq2seq.constants import EOS, SOS, device, maxLengthSentence, indicesRaw
 
 def evaluate(encoder, decoder, input_tensor, max_length=maxLengthSentence):
     with torch.no_grad():
@@ -32,7 +33,7 @@ def evaluate(encoder, decoder, input_tensor, max_length=maxLengthSentence):
                 decoded_words.append('<EOS>')
                 break
             else:
-                decoded_words.append(output_lang.index2word[topi.item()])
+                decoded_words.append(indicesRaw[topi.item()])
 
             decoder_input = topi.squeeze().detach()
 
@@ -44,13 +45,13 @@ def evaluate(encoder, decoder, input_tensor, max_length=maxLengthSentence):
 # input, target, and output to make some subjective quality judgements:
 #
 
-def evaluateRandomly(encoder, decoder, pairs, n=10):
+def evaluateRandomly(encoder, decoder, dataset, n=10):
     for i in range(n):
-        pair = choice(pairs)
-        print('>', pair[0])
-        print('=', pair[1])
-        output_words, attentions = evaluate(encoder, decoder, pair[0])
+        set = choice(dataset.test)
+        print('>', set.original)
+        for sentence in set.allSimple:
+            print('=', sentence)
+        output_words, attentions = evaluate(encoder, decoder, set.originalTorch)
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
         print('')
-

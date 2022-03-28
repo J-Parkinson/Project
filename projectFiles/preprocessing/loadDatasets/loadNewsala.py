@@ -1,12 +1,20 @@
 from projectFiles.helpers.DatasetSplits import datasetSplits
+from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from projectFiles.helpers.SimplificationData import *
 from os import walk
 import pickle
 
-def loadNewsala(loadPickleFile=True, pickleFile=True, restrictLanguage="en", fullSimplifyOnly=False, startLoc=""):
+from projectFiles.helpers.SimplificationData.SimplificationDataset import simplificationDataset
+from projectFiles.helpers.SimplificationData.SimplificationDatasets import simplificationDatasets
+from projectFiles.helpers.SimplificationData.SimplificationSet import simplificationSet
+
+
+def loadNewsala(loadPickleFile=True, pickleFile=False, restrictLanguage="en", fullSimplifyOnly=False, startLoc="../../../"):
+    print("Loading Newsala.")
     baseLoc = f"{startLoc}datasets/newsala"
 
     if loadPickleFile:
+        print("Loading from file.")
         return pickle.load(open(f"{baseLoc}/pickled.p", "rb"))
     dataset = datasetToLoad.newsala
 
@@ -25,6 +33,8 @@ def loadNewsala(loadPickleFile=True, pickleFile=True, restrictLanguage="en", ful
     everyPairDev = []
     everyPairTest = []
 
+    lenFile = len(uniqueFilenamesAndLangs)
+
     for p, (filename, lang) in enumerate(uniqueFilenamesAndLangs):
         if restrictLanguage and lang != restrictLanguage:
             continue
@@ -39,12 +49,15 @@ def loadNewsala(loadPickleFile=True, pickleFile=True, restrictLanguage="en", ful
         for file in allSimplificationsFiles:
             file.close()
 
-        simplificationGroup = simplificationSet(allSimplifications[0], [allSimplifications[-1]] if fullSimplifyOnly else allSimplifications[1:], dataset, language=lang)
+        simplificationSets = list(zip(*allSimplifications))
+
+        simplificationGroup = [simplificationSet(set[0], [set[-1]] if fullSimplifyOnly else set[1:], dataset, language=lang) for set in simplificationSets]
 
         datasetToAddTo = datasetSplits.train
         if len(allSimplifications) > 5:
             datasetToAddTo = datasetSplits.dev
         elif p % 25 == 0:
+            print(f"{int(p/lenFile*100)}% complete")
             datasetToAddTo = datasetSplits.test
 
         if datasetToAddTo == datasetSplits.train:
@@ -54,6 +67,8 @@ def loadNewsala(loadPickleFile=True, pickleFile=True, restrictLanguage="en", ful
         else:
             everyPairTest.append(simplificationGroup)
 
+    print("File loaded.")
+
     pairsTrain = simplificationDataset(everyPairTrain)
     pairsDev = simplificationDataset(everyPairDev)
     pairsTest = simplificationDataset(everyPairTest)
@@ -61,7 +76,9 @@ def loadNewsala(loadPickleFile=True, pickleFile=True, restrictLanguage="en", ful
     dataset = simplificationDatasets(dataset, pairsTrain, pairsDev, pairsTest)
 
     if pickleFile:
+        print("Saving file.")
         pickle.dump(dataset, open(f"{baseLoc}/pickled.p", "wb"))
+        print("File saved.")
     return dataset
 
-#loadNewsala()
+#loadNewsala(loadPickleFile=False, pickleFile=True)

@@ -4,7 +4,8 @@ import torch
 from torch import optim, nn
 
 from projectFiles.helpers.epochTiming import Timer
-from projectFiles.seq2seq.constants import device, SOS, teacher_forcing_ratio, EOS, maxLengthSentence
+from projectFiles.seq2seq.constants import device, SOS, teacher_forcing_ratio, EOS, maxLengthSentence, indices
+from projectFiles.seq2seq.plots import showPlot
 
 
 def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=maxLengthSentence):
@@ -73,46 +74,59 @@ def trainIters(encoder, decoder, trainingData, datasetName="", locationToSaveTo=
     optimalEncoder = None
     optimalDecoder = None
     fileSaveName = f"{locationToSaveTo}optimal_{datasetName}_{timer.getStartTime()}".replace(":", "")
-    notFirstYet=False
+    notFirstYet=startIter==0
+    i = 0
 
-    for i, pair in enumerate(trainingData):
-        if i < startIter:
-            continue
+    for m, pair in enumerate(trainingData):
         input_tensor = pair[0]
-        target_tensor = pair[1]
+        target_tensors = pair[1]
+        j = 0
+        l = 0
+        while i < startIter and j < len(target_tensors):
+            i += 1
+            j += 1
+        if j == len(target_tensors):
+            continue
 
-        loss = train(input_tensor, target_tensor, encoder,
-                     decoder, encoder_optimizer, decoder_optimizer, criterion)
-        print_loss_total += loss
-        plot_loss_total += loss
+        for k, target_tensor in enumerate(target_tensors):
+            i += 1
+            if k < j:
+                continue
 
-        if (i+1) % print_every == 0:
-            if not notFirstYet:
-                notFirstYet = True
-            else:
-                print_loss_avg = print_loss_total / print_every
-                minLoss = min(minLoss, print_loss_total)
-                if minLoss == print_loss_total:
-                    optimalEncoder = encoder.state_dict()
-                    optimalDecoder = decoder.state_dict()
-                    with open(f"{fileSaveName}.txt", "w+") as file:
-                        file.write(f"Iteration {i}\nDataset: {datasetName}")
-                    torch.save(optimalEncoder, f"{fileSaveName}_encoder.pt")
-                    torch.save(optimalDecoder, f"{fileSaveName}_decoder.pt")
-                print_loss_total = 0
-                print("_____________________")
-                print(f"Iteration {i+1}")
-                timer.printTimeDiff()
-                timer.printTimeBetweenChecks()
-                timer.calculateTimeLeftToRun(i, len(trainingData))
-                print(f"Loss average: {print_loss_avg}")
-                print(f"Min avg loss per {print_every} iterations: {minLoss / print_every}")
+            l += len(target_tensors)
 
-        if (i+1) % plot_every == 0:
-            plot_loss_avg = plot_loss_total / plot_every
-            plot_losses.append(plot_loss_avg)
-            plot_loss_total = 0
+            loss = train(input_tensor, target_tensor, encoder,
+                         decoder, encoder_optimizer, decoder_optimizer, criterion)
+            print_loss_total += loss
+            plot_loss_total += loss
 
-    #showPlot(plot_losses)
+            if (i+1) % print_every == 0:
+                if not notFirstYet:
+                    notFirstYet = True
+                else:
+                    print_loss_avg = print_loss_total / print_every
+                    minLoss = min(minLoss, print_loss_total)
+                    if minLoss == print_loss_total:
+                        optimalEncoder = encoder.state_dict()
+                        optimalDecoder = decoder.state_dict()
+                        with open(f"{fileSaveName}.txt", "w+") as file:
+                            file.write(f"Iteration {i+1}\nDataset: {datasetName}")
+                        torch.save(optimalEncoder, f"{fileSaveName}_encoder.pt")
+                        torch.save(optimalDecoder, f"{fileSaveName}_decoder.pt")
+                    print_loss_total = 0
+                    print("_____________________")
+                    print(f"Iteration {i+1}")
+                    timer.printTimeDiff()
+                    timer.printTimeBetweenChecks()
+                    timer.calculateTimeLeftToRun(i+1, len(trainingData) * l / m)
+                    print(f"Loss average: {print_loss_avg}")
+                    print(f"Min avg loss per {print_every} iterations: {minLoss / print_every}")
+
+            if (i+1) % plot_every == 0:
+                plot_loss_avg = plot_loss_total / plot_every
+                plot_losses.append(plot_loss_avg)
+                plot_loss_total = 0
+
+    showPlot(plot_losses)
     return optimalEncoder, optimalDecoder
 
