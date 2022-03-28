@@ -1,7 +1,5 @@
-import torch
-
 from projectFiles.helpers.DatasetSplits import datasetSplits
-from projectFiles.helpers.DatasetToLoad import datasetToLoad, dsName, name2DTL
+from projectFiles.helpers.DatasetToLoad import datasetToLoad, dsName
 from projectFiles.preprocessing.convertToPyTorch.simplificationDataToPyTorch import simplificationDataToPyTorch
 from projectFiles.seq2seq.constants import device
 from projectFiles.seq2seq.loadEncoderDecoder import loadEncoderDecoder, loadDataForEncoderDecoder
@@ -20,12 +18,13 @@ def runSeq2Seq(dataset, hiddenLayerWidth=256, maxIndices=222823):
     return optimalEncoder, optimalDecoder, datasetOrig
 
 
-def runSeq2SeqFromExisting(filepath, hiddenLayerWidth, maxIndices):
+def runSeq2SeqFromExisting(filepath, hiddenLayerWidth=256, maxIndices=222823):
     encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
 
     datasetLoaded, datasetOrig, iteration, dataset = loadDataForEncoderDecoder(filepath, maxIndices)
     print("Begin iterations")
-    optimalEncoder, optimalDecoder = trainIters(encoder, decoder, datasetLoaded['train'], datasetName=dataset, startIter=int(iteration))
+    optimalEncoder, optimalDecoder = trainIters(encoder, decoder, datasetLoaded['train'], datasetName=dataset,
+                                                startIter=int(iteration))
     return optimalEncoder, optimalDecoder, datasetOrig
 
 runSeq2Seq(

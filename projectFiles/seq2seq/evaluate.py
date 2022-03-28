@@ -1,9 +1,10 @@
-from random import random, choice
+from random import choice
 
 import torch
 
-from projectFiles.helpers.DatasetSplits import datasetSplits
 from projectFiles.seq2seq.constants import EOS, SOS, device, maxLengthSentence, indicesRaw
+from projectFiles.seq2seq.loadEncoderDecoder import loadEncoderDecoder, loadDataForEncoderDecoder
+
 
 def evaluate(encoder, decoder, input_tensor, max_length=maxLengthSentence):
     with torch.no_grad():
@@ -45,7 +46,7 @@ def evaluate(encoder, decoder, input_tensor, max_length=maxLengthSentence):
 # input, target, and output to make some subjective quality judgements:
 #
 
-def evaluateRandomly(encoder, decoder, dataset, n=10):
+def evaluateRandomly(encoder, decoder, dataset, n=5):
     for i in range(n):
         set = choice(dataset.test)
         print('>', set.original)
@@ -54,4 +55,15 @@ def evaluateRandomly(encoder, decoder, dataset, n=10):
         output_words, attentions = evaluate(encoder, decoder, set.originalTorch)
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
-        print('')
+        print('-----------------------------------')
+
+
+def loadEncoderDecoderDatasetAndEvaluateRandomly(filepath, hiddenLayerWidth=256, maxIndices=222823):
+    encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
+
+    _, datasetData, _, dataset = loadDataForEncoderDecoder(filepath, maxIndices)
+
+    evaluateRandomly(encoder, decoder, datasetData)
+
+
+loadEncoderDecoderDatasetAndEvaluateRandomly("trainedModels/optimal_asset_025043")
