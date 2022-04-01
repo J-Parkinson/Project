@@ -1,25 +1,24 @@
+import pickle
+from os import walk
+
+from projectFiles.constants import baseLoc
 from projectFiles.helpers.DatasetSplits import datasetSplits
 from projectFiles.helpers.DatasetToLoad import datasetToLoad
-from projectFiles.helpers.SimplificationData import *
-from os import walk
-import pickle
-
 from projectFiles.helpers.SimplificationData.SimplificationDataset import simplificationDataset
 from projectFiles.helpers.SimplificationData.SimplificationDatasets import simplificationDatasets
 from projectFiles.helpers.SimplificationData.SimplificationSet import simplificationSet
 
 
-def loadNewsala(loadPickleFile=True, pickleFile=False, restrictLanguage="en", fullSimplifyOnly=False, startLoc="../../../"):
+def loadNewsala(loadPickleFile=True, pickleFile=False, restrictLanguage="en", fullSimplifyOnly=False):
     print("Loading Newsala.")
-    baseLoc = f"{startLoc}datasets/newsala"
 
     if loadPickleFile:
         print("Loading from file.")
-        return pickle.load(open(f"{baseLoc}/pickled.p", "rb"))
+        return pickle.load(open(f"{baseLoc}/datasets/newsala/pickled.p", "rb"))
     dataset = datasetToLoad.newsala
 
-    #Find names of every article in dataset
-    allFilenames = tuple(walk(baseLoc))[0][2]
+    # Find names of every article in dataset
+    allFilenames = tuple(walk(f"{baseLoc}/datasets/newsala"))[0][2]
 
     #Larger numbers are more simplified
     uniqueFilenamesAndLangs = list(set([".".join(filename.split(".", 2)[:2]) for filename in allFilenames]))
@@ -39,9 +38,10 @@ def loadNewsala(loadPickleFile=True, pickleFile=False, restrictLanguage="en", fu
         if restrictLanguage and lang != restrictLanguage:
             continue
 
-        allSimplificationsFiles = [open(f"{baseLoc}/{filename}.{lang}.{i}.txt", "r", encoding="utf-8") for i in range(5)]
+        allSimplificationsFiles = [open(f"{baseLoc}/datasets/newsala/{filename}.{lang}.{i}.txt", "r", encoding="utf-8")
+                                   for i in range(5)]
         try:
-            allSimplificationsFiles.append(open(f"{baseLoc}/{filename}.{lang}.5.txt"))
+            allSimplificationsFiles.append(open(f"{baseLoc}/datasets/newsala/{filename}.{lang}.5.txt"))
         except:
             pass
 
@@ -56,16 +56,16 @@ def loadNewsala(loadPickleFile=True, pickleFile=False, restrictLanguage="en", fu
         datasetToAddTo = datasetSplits.train
         if len(allSimplifications) > 5:
             datasetToAddTo = datasetSplits.dev
-        elif p % 25 == 0:
-            print(f"{int(p/lenFile*100)}% complete")
+        elif p % 50 == 0:
+            print(f"{int(p / lenFile * 100)}% complete")
             datasetToAddTo = datasetSplits.test
 
         if datasetToAddTo == datasetSplits.train:
-            everyPairTrain.append(simplificationGroup)
+            everyPairTrain += simplificationGroup
         elif datasetToAddTo == datasetSplits.dev:
-            everyPairDev.append(simplificationGroup)
+            everyPairDev += simplificationGroup
         else:
-            everyPairTest.append(simplificationGroup)
+            everyPairTest += simplificationGroup
 
     print("File loaded.")
 
@@ -77,7 +77,7 @@ def loadNewsala(loadPickleFile=True, pickleFile=False, restrictLanguage="en", fu
 
     if pickleFile:
         print("Saving file.")
-        pickle.dump(dataset, open(f"{baseLoc}/pickled.p", "wb"))
+        pickle.dump(dataset, open(f"{baseLoc}/datasets/newsala/pickled.p", "wb"))
         print("File saved.")
     return dataset
 

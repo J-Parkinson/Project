@@ -1,16 +1,17 @@
+from collections import Counter
+
 from projectFiles.preprocessing.loadDatasets.loadAsset import loadAsset
 from projectFiles.preprocessing.loadDatasets.loadNewsala import loadNewsala
 from projectFiles.preprocessing.loadDatasets.loadWikiLarge import loadWikiLarge
 from projectFiles.preprocessing.loadDatasets.loadWikiSmall import loadWikiSmall
-from collections import Counter
 
-asset = loadAsset(startLoc="../../../")
+asset = loadAsset()
 print("asset")
-newsala = loadNewsala(startLoc="../../../")
+newsala = loadNewsala()
 print("newsala")
-wikismall = loadWikiSmall(startLoc="../../../")
+wikismall = loadWikiSmall()
 print("wikismall")
-wikilarge = loadWikiLarge(startLoc="../../../")
+wikilarge = loadWikiLarge()
 print("wikilarge")
 
 datasets = [asset.train, asset.dev, asset.test,

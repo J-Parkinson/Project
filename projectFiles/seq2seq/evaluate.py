@@ -2,7 +2,8 @@ from random import choice
 
 import torch
 
-from projectFiles.seq2seq.constants import EOS, SOS, device, maxLengthSentence, indicesRaw
+from projectFiles.helpers.SimplificationData import simplificationSet
+from projectFiles.seq2seq.constants import EOS, SOS, device, maxLengthSentence, indicesRaw, indices
 from projectFiles.seq2seq.loadEncoderDecoder import loadEncoderDecoder, loadDataForEncoderDecoder
 
 
@@ -44,26 +45,53 @@ def evaluate(encoder, decoder, input_tensor, max_length=maxLengthSentence):
 ######################################################################
 # We can evaluate random sentences from the training set and print out the
 # input, target, and output to make some subjective quality judgements:
-#
 
-def evaluateRandomly(encoder, decoder, dataset, n=5):
+def evaluateRandomly(encoder, decoder, dataset, datasetName, n=5):
     for i in range(n):
         set = choice(dataset.test)
-        print('>', set.original)
-        for sentence in set.allSimple:
-            print('=', sentence)
-        output_words, attentions = evaluate(encoder, decoder, set.originalTorch)
+        setObj = simplificationSet(" ".join(set["original"]), [" ".join(simple) for simple in set["simplified"]],
+                                   datasetName, language="en")
+        setObj.addIndices(indices)
+        setObj.torchSet()
+
+        print()
+        print('-----------------------------------')
+        print('>', " ".join(set["original"]))
+        for sentence in set["simplified"]:
+            print('=', " ".join(sentence))
+        output_words, attentions = evaluate(encoder, decoder, setObj.originalTorch)
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
-        print('-----------------------------------')
+
+
+def evaluateAll(encoder, decoder, dataset, datasetName):
+    testData = dataset.test
+    setObjList = []
+    for set in testData:
+        setObj = simplificationSet(" ".join(set["original"]), [" ".join(simple) for simple in set["simplified"]],
+                                   datasetName, language="en")
+        setObj.addIndices(indices)
+        setObj.torchSet()
+        output_words, attentions = evaluate(encoder, decoder, setObj.originalTorch)
+        output_sentence = ' '.join(output_words)
+        setObj.addPredicted(output_sentence)
+        setObjList.append(setObj)
+    return setObjList
 
 
 def loadEncoderDecoderDatasetAndEvaluateRandomly(filepath, hiddenLayerWidth=256, maxIndices=222823):
     encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
 
-    _, datasetData, _, dataset = loadDataForEncoderDecoder(filepath, maxIndices)
+    _, datasetData, _, datasetName = loadDataForEncoderDecoder(filepath, maxIndices)
 
-    evaluateRandomly(encoder, decoder, datasetData)
+    evaluateRandomly(encoder, decoder, datasetData, datasetName)
 
 
-loadEncoderDecoderDatasetAndEvaluateRandomly("trainedModels/optimal_asset_025043")
+def loadEncoderDecoderDatasetAndEvaluateAll(filepath, hiddenLayerWidth=256, maxIndices=222823):
+    encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
+
+    _, datasetData, _, datasetName = loadDataForEncoderDecoder(filepath, maxIndices)
+
+    return evaluateAll(encoder, decoder, datasetData, datasetName)
+
+# loadEncoderDecoderDatasetAndEvaluateAll("seq2seq/trainedModels/optimal_asset_025043")

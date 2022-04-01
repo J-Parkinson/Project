@@ -4,7 +4,7 @@ import torch
 from torch import optim, nn
 
 from projectFiles.helpers.epochTiming import Timer
-from projectFiles.seq2seq.constants import device, SOS, teacher_forcing_ratio, EOS, maxLengthSentence, indices
+from projectFiles.seq2seq.constants import device, SOS, teacher_forcing_ratio, EOS, maxLengthSentence
 from projectFiles.seq2seq.plots import showPlot
 
 
@@ -60,10 +60,47 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, deco
     return loss.item() / target_length
 
 
+def validationLoss(input_tensors, target_tensors, encoder, decoder, criterion, max_length=maxLengthSentence):
+    losses = []
+    with torch.no_grad():
+        for input_tensor, target_tensor in zip(input_tensors, target_tensors):
+            encoder_hidden = encoder.initHidden()
 
-def trainIters(encoder, decoder, trainingData, datasetName="", locationToSaveTo="trainedModels/", print_every=150, plot_every=100, learning_rate=0.01, startIter=0):
+            input_length = input_tensor.size(0)
+            target_length = target_tensor.size(0)
+
+            encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
+
+            loss = 0
+
+            for ei in range(input_length):
+                encoder_output, encoder_hidden = encoder(
+                    input_tensor[ei], encoder_hidden)
+                encoder_outputs[ei] = encoder_output[0, 0]
+
+            decoder_input = torch.tensor([[SOS]], device=device)
+
+            decoder_hidden = encoder_hidden
+
+            # We do not use teacher forcing during evaluation
+            for di in range(target_length):
+                decoder_output, decoder_hidden, decoder_attention = decoder(
+                    decoder_input, decoder_hidden, encoder_outputs)
+                topv, topi = decoder_output.topk(1)
+                decoder_input = topi.squeeze().detach()  # detach from history as input
+
+                loss += criterion(decoder_output, target_tensor[di])
+                if decoder_input.item() == EOS:
+                    break
+            losses.append(loss.item() / target_length)
+    return sum(losses) / len(losses)
+
+
+def trainIters(encoder, decoder, allData, datasetName="", locationToSaveTo="trainedModels/", print_every=150,
+               plot_every=100, learning_rate=0.01, startIter=0):
     timer = Timer()
     plot_losses = []
+    plot_dev_losses = []
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
 
@@ -71,11 +108,15 @@ def trainIters(encoder, decoder, trainingData, datasetName="", locationToSaveTo=
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
     criterion = nn.NLLLoss()
     minLoss = 999999999999999999999999999999999999
+    minDevLoss = 999999999999999999999999999999999999
     optimalEncoder = None
     optimalDecoder = None
     fileSaveName = f"{locationToSaveTo}optimal_{datasetName}_{timer.getStartTime()}".replace(":", "")
-    notFirstYet=startIter==0
+    notFirstYet = startIter == 0
     i = 0
+
+    trainingData = allData["train"]
+    validationData = allData["dev"]
 
     for m, pair in enumerate(trainingData):
         input_tensor = pair[0]
@@ -106,27 +147,36 @@ def trainIters(encoder, decoder, trainingData, datasetName="", locationToSaveTo=
                 else:
                     print_loss_avg = print_loss_total / print_every
                     minLoss = min(minLoss, print_loss_total)
-                    if minLoss == print_loss_total:
+
+                    # Calculate validation loss
+                    devLoss = validationLoss(*list(zip(*validationData)), encoder, decoder, criterion)
+                    minDevLoss = min(minDevLoss, devLoss)
+
+                    if minDevLoss == devLoss:
                         optimalEncoder = encoder.state_dict()
                         optimalDecoder = decoder.state_dict()
                         with open(f"{fileSaveName}.txt", "w+") as file:
-                            file.write(f"Iteration {i+1}\nDataset: {datasetName}")
+                            file.write(f"Iteration {i + 1}\nDataset: {datasetName}")
                         torch.save(optimalEncoder, f"{fileSaveName}_encoder.pt")
                         torch.save(optimalDecoder, f"{fileSaveName}_decoder.pt")
+
                     print_loss_total = 0
+
                     print("_____________________")
-                    print(f"Iteration {i+1}")
+                    print(f"Iteration {i + 1}")
                     timer.printTimeDiff()
                     timer.printTimeBetweenChecks()
-                    timer.calculateTimeLeftToRun(i+1, len(trainingData) * l / m)
+                    timer.calculateTimeLeftToRun(i + 1, len(trainingData) * l / m)
                     print(f"Loss average: {print_loss_avg}")
                     print(f"Min avg loss per {print_every} iterations: {minLoss / print_every}")
+                    print(f"Validation loss: {devLoss}")
 
-            if (i+1) % plot_every == 0:
-                plot_loss_avg = plot_loss_total / plot_every
-                plot_losses.append(plot_loss_avg)
-                plot_loss_total = 0
+                    plot_loss_avg = plot_loss_total / plot_every
+                    plot_losses.append(plot_loss_avg)
+                    plot_loss_total = 0
+
+                    plot_dev_losses.append(devLoss)
 
     showPlot(plot_losses)
+    showPlot(plot_dev_losses)
     return optimalEncoder, optimalDecoder
-

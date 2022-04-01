@@ -1,6 +1,3 @@
-from projectFiles.helpers.DatasetSplits import datasetSplits
-
-
 class simplificationDatasets():
     def __init__(self, dataset, train, dev, test):
         self.dataset = dataset
@@ -8,7 +5,7 @@ class simplificationDatasets():
         self.dev = dev
         self.test = test
 
-    def addIndices(self, indices, maxIndices=75000):
+    def addIndices(self, indices, maxIndices=222823):
         for set in self.train.dataset:
             set.addIndices(indices, maxIndices)
         for set in self.dev.dataset:

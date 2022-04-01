@@ -1,3 +1,5 @@
+from time import time
+
 from matplotlib import pyplot as plt, ticker
 
 from projectFiles.seq2seq.evaluate import evaluate
@@ -19,7 +21,8 @@ def showAttention(input_sentence, output_words, attentions):
     ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
     ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
 
-    plt.show()
+    fig.savefig(f"attention_{time()}.png", dpi=fig.dpi)
+    fig.show()
 
 
 def evaluateAndShowAttention(encoder, decoder, inputSentence):
@@ -36,3 +39,5 @@ def showPlot(points):
     loc = ticker.MultipleLocator(base=0.2)
     ax.yaxis.set_major_locator(loc)
     plt.plot(points)
+    plt.savefig(f"loss_{time()}.png", dpi=fig.dpi)
+    plt.show()

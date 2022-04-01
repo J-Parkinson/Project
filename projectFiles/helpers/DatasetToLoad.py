@@ -10,4 +10,5 @@ def dsName(dataset):
     return ["asset", "wikiSmall", "wikiLarge", "newsala"][dataset.value]
 
 def name2DTL(name):
-    return ["asset", "wikiSmall", "wikiLarge", "newsala"].index(name)
+    return [datasetToLoad.asset, datasetToLoad.wikismall, datasetToLoad.wikilarge, datasetToLoad.newsala][
+        ["asset", "wikiSmall", "wikiLarge", "newsala"].index(name)]

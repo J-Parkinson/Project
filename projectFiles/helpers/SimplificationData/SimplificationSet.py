@@ -15,10 +15,11 @@ class simplificationSet():
         self.dataset = dataset
         self.calculatedSimplicityFactor = 0
         self.language = language
-        self.originalIndices = None
-        self.simpleIndices = None
+        self.originalIndices = []
+        self.simpleIndices = []
         self.originalTorch = None
         self.simpleTorches = None
+        self.predicted = ""
 
     def _tokenise(self, dataset):
         if dataset in [datasetToLoad.wikilarge, datasetToLoad.wikismall]:
@@ -46,16 +47,19 @@ class simplificationSet():
             self.allSimple = [self._removeEscapedBracketsFromSentenceWiki(sentence) for sentence in self.allSimple]
         return
 
-    def _safeSearch(self, indices, word, maxIndices=75000):
+    def _safeSearch(self, indices, word, maxIndices=222823):
         try:
             return indices[word.lower()]
         except:
-            #indices start at 0
+            # indices start at 0
             return maxIndices - 1
 
-    def addIndices(self, indices, maxIndices=75000):
-        self.originalIndices = [min(self._safeSearch(indices, word, maxIndices-2), maxIndices-3)+2 for word in self.original]
-        self.simpleIndices = [[min(self._safeSearch(indices, word, maxIndices-2), maxIndices-3) + 2 for word in sentence] for sentence in self.allSimple]
+    def addIndices(self, indices, maxIndices=222823):
+        self.originalIndices = [min(self._safeSearch(indices, word, maxIndices - 2), maxIndices - 3) + 2 for word in
+                                self.original]
+        self.simpleIndices = [
+            [min(self._safeSearch(indices, word, maxIndices - 2), maxIndices - 3) + 2 for word in sentence] for sentence
+            in self.allSimple]
 
     def getIndices(self):
         if self.originalIndices and self.simpleIndices:
@@ -79,3 +83,12 @@ class simplificationSet():
         self.simpleTorches = simpleTorches
 
         return (originalTorch, simpleTorches)
+
+    def addPredicted(self, prediction):
+        self.predicted = prediction
+
+    def getPredicted(self):
+        return self.predicted
+
+    def getMetric(self, lambdaFunc):
+        return lambdaFunc(self.original, self.allSimple, self.originalIndices, self.simpleIndices)

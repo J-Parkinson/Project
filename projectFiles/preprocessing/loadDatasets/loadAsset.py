@@ -1,37 +1,37 @@
-from projectFiles.helpers.DatasetToLoad import datasetToLoad
 import pickle
 
+from projectFiles.constants import baseLoc
+from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from projectFiles.helpers.SimplificationData.SimplificationDataset import simplificationDataset
 from projectFiles.helpers.SimplificationData.SimplificationDatasets import simplificationDatasets
 from projectFiles.helpers.SimplificationData.SimplificationSet import simplificationSet
 
 
-def loadAsset(loadPickleFile=True, pickleFile=False, startLoc="../../../"):
+def loadAsset(loadPickleFile=True, pickleFile=False):
     print("Loading ASSET.")
-    baseLoc = f"{startLoc}datasets/asset"
 
     if loadPickleFile:
         print("Loading from file.")
-        return pickle.load(open(f"{baseLoc}/pickled.p", "rb"))
+        return pickle.load(open(f"{baseLoc}/datasets/asset/pickled.p", "rb"))
 
     dataset = datasetToLoad.asset
-    with open(f'{baseLoc}/asset.valid.orig', 'r', encoding='utf-8') as validOrig:
+    with open(f'{baseLoc}/datasets/asset/asset.valid.orig', 'r', encoding='utf-8') as validOrig:
         validOrig = validOrig.read().splitlines()
     validPairs = [validOrig]
     for i in range(10):
-        with open(f'{baseLoc}/asset.valid.simp.{i}', 'r', encoding='utf-8') as validSimp:
+        with open(f'{baseLoc}/datasets/asset/asset.valid.simp.{i}', 'r', encoding='utf-8') as validSimp:
             validSimp = validSimp.read().splitlines()
             validPairs.append(validSimp)
     validSetData = list(zip(*validPairs))
     validSets = [simplificationSet(data[0], data[1:], dataset, language="en") for data in validSetData]
-    pairsTrain = validSets[:-30]
-    pairsDev = validSets[-30:]
+    pairsTrain = validSets[:-100]
+    pairsDev = validSets[-100:]
 
-    with open(f'{baseLoc}/asset.test.orig', 'r', encoding='utf-8') as testOrig:
+    with open(f'{baseLoc}/datasets/asset/asset.test.orig', 'r', encoding='utf-8') as testOrig:
         testOrig = testOrig.read().splitlines()
     testPairs = [testOrig]
     for i in range(10):
-        with open(f'{baseLoc}/asset.test.simp.{i}', 'r', encoding='utf-8') as testSimp:
+        with open(f'{baseLoc}/datasets/asset/asset.test.simp.{i}', 'r', encoding='utf-8') as testSimp:
             testSimp = testSimp.read().splitlines()
             testPairs.append(testSimp)
     testSetData = list(zip(*testPairs))
@@ -46,7 +46,7 @@ def loadAsset(loadPickleFile=True, pickleFile=False, startLoc="../../../"):
 
     if pickleFile:
         print("Saving dataset.")
-        pickle.dump(dataset, open(f"{baseLoc}/pickled.p", "wb"))
+        pickle.dump(dataset, open(f"{baseLoc}/datasets/asset/pickled.p", "wb"))
         print("Dataset saved.")
     return dataset
 
