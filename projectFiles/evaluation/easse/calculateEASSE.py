@@ -40,6 +40,43 @@ def _sameSizeCreateSentenceLists(simplificationSets):
 #    write_html_report(f"report_{time.time()}.html", orig_sents=allOriginal, sys_sents=allPredicted, refs_sents=allSimplified, test_set=testSet)
 #    return
 
+def calculateFleschKincaid(sentences):
+    return corpus_fkgl(sentences=sentences)
+
+
+def calculateBLEU(inputSentences, referenceSentenceSets):
+    return corpus_bleu(sys_sents=inputSentences, refs_sents=referenceSentenceSets)
+
+
+def calculateAverageSentenceBLEU(inputSentences, referenceSentenceSets):
+    return corpus_averaged_sentence_bleu(sys_sents=inputSentences, refs_sents=referenceSentenceSets)
+
+
+def calculateSARI(originalSentences, predictedSentences, referenceSentenceSets, microSari=False):
+    sariMacroAdd, sariMacroKeep, sariMacroDel = get_corpus_sari_operation_scores(orig_sents=originalSentences,
+                                                                                 sys_sents=predictedSentences,
+                                                                                 refs_sents=referenceSentenceSets,
+                                                                                 use_paper_version=microSari)
+    sariMacro = (sariMacroAdd + sariMacroKeep + sariMacroDel) / 3
+    return sariMacro, sariMacroAdd, sariMacroKeep, sariMacroDel
+
+
+def calculateBERTScore(originalSentences, referenceSentenceSets):
+    return corpus_bertscore(sys_sents=originalSentences, refs_sents=referenceSentenceSets)
+
+
+def calculateSAMSA(originalSentences, predictedSentences):
+    return corpus_samsa(orig_sents=originalSentences, sys_sents=predictedSentences)
+
+
+def calculateF1Token(originalSentences, referenceSentenceSets):
+    return corpus_f1_token(sys_sents=originalSentences, refs_sents=referenceSentenceSets)
+
+
+def calculateOtherMetrics(originalSentences, systemSentences):
+    return corpus_quality_estimation(orig_sentences=originalSentences, sys_sentences=systemSentences)
+
+
 def computeAll(simplificationSets, samsa=False):
     allResults = {}
 
@@ -58,73 +95,62 @@ def computeAll(simplificationSets, samsa=False):
     print("Computing FKCL")
 
     # Flesch-Kincaid metrics
-    fkclOriginal = corpus_fkgl(sentences=allOriginal)
+    fkclOriginal = calculateFleschKincaid(allOriginal)
     allResults["Flesch-Kincaid scores for original sentences"] = fkclOriginal
-    fkclSimplifiedExamples = corpus_fkgl(sentences=sameSizeSimplified)
+    fkclSimplifiedExamples = calculateFleschKincaid(sameSizeSimplified)
     allResults["Flesch-Kincaid scores for simplified example sentences"] = fkclSimplifiedExamples
-    fkclPredictions = corpus_fkgl(sentences=allPredicted)
+    fkclPredictions = calculateFleschKincaid(allPredicted)
     allResults["Flesch-Kincaid scores for predicted sentences"] = fkclPredictions
 
     print("Computing BLEU")
     # BLEU scores
-    bleuScoreOriginal = corpus_bleu(sys_sents=allOriginal,
-                                    refs_sents=allSimplified)
+    bleuScoreOriginal = calculateBLEU(allOriginal, allSimplified)
     allResults["BLEU score for original vs simplified sentences"] = bleuScoreOriginal
-    bleuScorePredicted = corpus_bleu(sys_sents=allPredicted,
-                                     refs_sents=allSimplified)
+    bleuScorePredicted = calculateBLEU(allPredicted, allSimplified)
     allResults["BLEU score for predicted vs simplified sentences"] = bleuScorePredicted
-    bleuAverageOriginal = corpus_averaged_sentence_bleu(sys_sents=allOriginal,
-                                                        refs_sents=allSimplified)
+    bleuAverageOriginal = calculateAverageSentenceBLEU(allOriginal, allSimplified)
     allResults["Average BLEU score for original vs simplified sentences"] = bleuAverageOriginal
-    bleuAveragePredicted = corpus_averaged_sentence_bleu(sys_sents=allPredicted,
-                                                         refs_sents=allSimplified)
+    bleuAveragePredicted = calculateAverageSentenceBLEU(allPredicted, allSimplified)
     allResults["Average BLEU score for predicted vs simplified sentences"] = bleuAveragePredicted
 
     print("Computing SARI")
     # SARI scores
-    sariMacroAdd, sariMacroKeep, sariMacroDel = get_corpus_sari_operation_scores(orig_sents=allOriginal,
-                                                                                 sys_sents=allPredicted,
-                                                                                 refs_sents=allSimplified,
-                                                                                 use_paper_version=False)
-    sariMacro = (sariMacroAdd + sariMacroKeep + sariMacroDel) / 3
-    allResults["SARI macro add/keep/delete/avg scores"] = (sariMacroAdd, sariMacroKeep, sariMacroDel, sariMacro)
-    sariMicroAdd, sariMicroKeep, sariMicroDel = get_corpus_sari_operation_scores(orig_sents=allOriginal,
-                                                                                 sys_sents=allPredicted,
-                                                                                 refs_sents=allSimplified,
-                                                                                 use_paper_version=True)
-    sariMicro = (sariMicroAdd + sariMicroKeep + sariMicroDel) / 3
-    allResults["SARI micro add/keep/delete/avg scores"] = (sariMicroAdd, sariMicroKeep, sariMicroDel, sariMicro)
+    sariMacro, sariMacroAdd, sariMacroKeep, sariMacroDel = calculateSARI(allOriginal, allPredicted, allSimplified,
+                                                                         microSari=False)
+    allResults["SARI macro avg/add/keep/delete scores"] = (sariMacro, sariMacroAdd, sariMacroKeep, sariMacroDel)
+    sariMicro, sariMicroAdd, sariMicroKeep, sariMicroDel = calculateSARI(allOriginal, allPredicted, allSimplified,
+                                                                         microSari=True)
+    allResults["SARI micro avg/add/keep/delete scores"] = (sariMicro, sariMicroAdd, sariMicroKeep, sariMicroDel)
 
     print("Computing BERTscore")
     # BERTscore
-    bertScoreOriginal = corpus_bertscore(sys_sents=allOriginal, refs_sents=allSimplified)
+    bertScoreOriginal = calculateBERTScore(allOriginal, allSimplified)
     allResults["BERTscore for original vs simplified sentences"] = bertScoreOriginal
-    bertScorePredictions = corpus_bertscore(sys_sents=allPredicted, refs_sents=allSimplified)
+    bertScorePredictions = calculateBERTScore(allPredicted, allSimplified)
     allResults["BERTscore for predicted vs simplified sentences"] = bertScorePredictions
 
     if samsa:
         print("Computing SAMSA")
         # SAMSA scores
-        samsaOriginalSimplified = corpus_samsa(orig_sents=sameSizeOriginal, sys_sents=sameSizeSimplified)
+        samsaOriginalSimplified = calculateSAMSA(sameSizeOriginal, sameSizeSimplified)
         allResults["SAMSA score for original vs simplified sentences"] = samsaOriginalSimplified
-        samsaOriginalPredicted = corpus_samsa(orig_sents=allOriginal, sys_sents=allPredicted)
+        samsaOriginalPredicted = calculateSAMSA(allOriginal, allPredicted)
         allResults["SAMSA score for original vs predicted sentences"] = samsaOriginalPredicted
 
     print("Computing token-wise F1")
     # Token-wise F1 score
-    tokenF1Original = corpus_f1_token(sys_sents=allOriginal, refs_sents=allSimplified)
+    tokenF1Original = calculateF1Token(allOriginal, allSimplified)
     allResults["Token F1 score for original vs simplified sentences"] = tokenF1Original
-    tokenF1Predicted = corpus_f1_token(sys_sents=allPredicted, refs_sents=allSimplified)
+    tokenF1Predicted = calculateF1Token(allPredicted, allSimplified)
     allResults["Token F1 score for predicted vs simplified sentences"] = tokenF1Predicted
 
     print("Computing other quality metrics")
     # Corpus quality metrics
     qualityOriginalSimp = {f"{k} for original vs simplified sentences": v for k, v in
-                           corpus_quality_estimation(orig_sentences=sameSizeOriginal,
-                                                     sys_sentences=sameSizeSimplified).items()}
+                           calculateOtherMetrics(sameSizeOriginal, sameSizeSimplified).items()}
     allResults.update(qualityOriginalSimp)
     qualityOriginalPred = {f"{k} for original vs predicted sentences": v for k, v in
-                           corpus_quality_estimation(orig_sentences=allOriginal, sys_sentences=allPredicted).items()}
+                           calculateOtherMetrics(allOriginal, allPredicted).items()}
     allResults.update(qualityOriginalPred)
 
     for resultName, result in allResults.items():

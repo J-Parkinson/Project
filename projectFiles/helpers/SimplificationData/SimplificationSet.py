@@ -16,9 +16,9 @@ class simplificationSet():
         self.calculatedSimplicityFactor = 0
         self.language = language
         self.originalIndices = []
-        self.simpleIndices = []
+        self.allSimpleIndices = []
         self.originalTorch = None
-        self.simpleTorches = None
+        self.allSimpleTorches = None
         self.predicted = ""
 
     def _tokenise(self, dataset):
@@ -57,30 +57,30 @@ class simplificationSet():
     def addIndices(self, indices, maxIndices=222823):
         self.originalIndices = [min(self._safeSearch(indices, word, maxIndices - 2), maxIndices - 3) + 2 for word in
                                 self.original]
-        self.simpleIndices = [
+        self.allSimpleIndices = [
             [min(self._safeSearch(indices, word, maxIndices - 2), maxIndices - 3) + 2 for word in sentence] for sentence
             in self.allSimple]
 
     def getIndices(self):
-        if self.originalIndices and self.simpleIndices:
-            return {"original": self.originalIndices, "simple": self.simpleIndices}
+        if self.originalIndices and self.allSimpleIndices:
+            return {"original": self.originalIndices, "simple": self.allSimpleIndices}
         else:
             return None
 
     def getData(self):
-        return {"original": self.original, "simplified": self.allSimple,
-                "originalIndices": self.originalIndices, "simpleIndices": self.simpleIndices}
+        return {"original": self.original, "allSimple": self.allSimple,
+                "originalIndices": self.originalIndices, "allSimpleIndices": self.allSimpleIndices}
 
     def torchSet(self):
         originalIndices = self.originalIndices + [EOS]
-        simpleIndices = [pairVal + [EOS] for pairVal in self.simpleIndices]
+        simpleIndices = [pairVal + [EOS] for pairVal in self.allSimpleIndices]
 
         originalTorch = torch.tensor(originalIndices, dtype=torch.long, device=device).view(-1, 1)
         simpleTorches = [torch.tensor(simpleIndex, dtype=torch.long, device=device).view(-1, 1) for simpleIndex in
                          simpleIndices]
 
         self.originalTorch = originalTorch
-        self.simpleTorches = simpleTorches
+        self.allSimpleTorches = simpleTorches
 
         return (originalTorch, simpleTorches)
 
@@ -90,5 +90,7 @@ class simplificationSet():
     def getPredicted(self):
         return self.predicted
 
+    # Returns a list, one for each
     def getMetric(self, lambdaFunc):
-        return lambdaFunc(self.original, self.allSimple, self.originalIndices, self.simpleIndices)
+        return [lambdaFunc(self.original, simplifiedSentence, self.originalIndices, simplifiedIndices) for
+                simplifiedSentence, simplifiedIndices in zip(self.allSimple, self.allSimpleIndices)]
