@@ -9,25 +9,27 @@ class simplificationSet():
     def __init__(self, original, allSimple, dataset, language="en"):
         self.original = original
         self.allSimple = allSimple
+        self.originalTokenized = original
+        self.allSimpleTokenized = allSimple
         self._removeEscapedCharacters(dataset)
         self._makeReplacementsGEC()
         self._tokenise(dataset)
         self.dataset = dataset
         self.calculatedSimplicityFactor = 0
         self.language = language
-        self.originalIndices = []
-        self.allSimpleIndices = []
+        self.originalIndices = None
+        self.allSimpleIndices = None
         self.originalTorch = None
         self.allSimpleTorches = None
         self.predicted = ""
 
     def _tokenise(self, dataset):
         if dataset in [datasetToLoad.wikilarge, datasetToLoad.wikismall]:
-            self.original = self.original.split(" ")
-            self.allSimple = [sentence.split(" ") for sentence in self.allSimple]
+            self.originalTokenized = self.originalTokenized.split(" ")
+            self.allSimpleTokenized = [sentence.split(" ") for sentence in self.allSimpleTokenized]
         else:
-            self.original = word_tokenize(self.original)
-            self.allSimple = [word_tokenize(sentence) for sentence in self.allSimple]
+            self.originalTokenized = word_tokenize(self.originalTokenized)
+            self.allSimpleTokenized = [word_tokenize(sentence) for sentence in self.allSimpleTokenized]
         self.tokenized = True
 
     def _removeEscapedBracketsFromSentenceWiki(self, sentence):
@@ -37,14 +39,15 @@ class simplificationSet():
 
     def _makeReplacementsGEC(self):
         for (frm, to) in [("''", '"'), ("--", "-"), ("`", "'")]:
-            self.original = self.original.replace(frm, to)
-            self.allSimple = [sentence.replace(frm, to) for sentence in self.allSimple]
+            self.originalTokenized = self.originalTokenized.replace(frm, to)
+            self.allSimpleTokenized = [sentence.replace(frm, to) for sentence in self.allSimpleTokenized]
 
     #Run before tokenisation
     def _removeEscapedCharacters(self, dataset):
         if dataset in [datasetToLoad.wikilarge, datasetToLoad.wikismall]:
-            self.original = self._removeEscapedBracketsFromSentenceWiki(self.original)
-            self.allSimple = [self._removeEscapedBracketsFromSentenceWiki(sentence) for sentence in self.allSimple]
+            self.originalTokenized = self._removeEscapedBracketsFromSentenceWiki(self.originalTokenized)
+            self.allSimpleTokenized = [self._removeEscapedBracketsFromSentenceWiki(sentence) for sentence in
+                                       self.allSimpleTokenized]
         return
 
     def _safeSearch(self, indices, word, maxIndices=222823):
@@ -56,20 +59,25 @@ class simplificationSet():
 
     def addIndices(self, indices, maxIndices=222823):
         self.originalIndices = [min(self._safeSearch(indices, word, maxIndices - 2), maxIndices - 3) + 2 for word in
-                                self.original]
+                                self.originalTokenized]
         self.allSimpleIndices = [
             [min(self._safeSearch(indices, word, maxIndices - 2), maxIndices - 3) + 2 for word in sentence] for sentence
-            in self.allSimple]
-
-    def getIndices(self):
-        if self.originalIndices and self.allSimpleIndices:
-            return {"original": self.originalIndices, "simple": self.allSimpleIndices}
-        else:
-            return None
+            in self.allSimpleTokenized]
 
     def getData(self):
-        return {"original": self.original, "allSimple": self.allSimple,
-                "originalIndices": self.originalIndices, "allSimpleIndices": self.allSimpleIndices}
+        base = {"originalTokenized": self.originalTokenized, "allSimpleTokenized": self.allSimpleTokenized,
+                "original": self.original,
+                "allSimple": self.allSimple}
+        if self.originalIndices:
+            base["originalIndices"] = self.originalIndices
+        if self.allSimpleIndices:
+            base["allSimpleIndices"] = self.allSimpleIndices
+        if self.predicted:
+            base["predicted"] = self.predicted
+        if self.originalTorch:
+            base["originalTorch"] = self.originalTorch
+        if self.allSimpleTorches:
+            base["allSimpleTorches"] = self.allSimpleTorches
 
     def torchSet(self):
         originalIndices = self.originalIndices + [EOS]
@@ -87,10 +95,7 @@ class simplificationSet():
     def addPredicted(self, prediction):
         self.predicted = prediction
 
-    def getPredicted(self):
-        return self.predicted
-
     # Returns a list, one for each
     def getMetric(self, lambdaFunc):
-        return [lambdaFunc(self.original, simplifiedSentence, self.originalIndices, simplifiedIndices) for
-                simplifiedSentence, simplifiedIndices in zip(self.allSimple, self.allSimpleIndices)]
+        return [lambdaFunc(self.originalTokenized, simplifiedSentence, self.originalIndices, simplifiedIndices) for
+                simplifiedSentence, simplifiedIndices in zip(self.allSimpleTokenized, self.allSimpleIndices)]

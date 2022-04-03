@@ -14,8 +14,7 @@ class simplificationDatasets():
             set.addIndices(indices, maxIndices)
 
     def torchProcess(self):
-        dict = {}
-        dict["train"] = [set.torchSet() for set in self.train.dataset]
-        dict["dev"] = [set.torchSet() for set in self.train.dataset]
-        dict["test"] = [set.torchSet() for set in self.train.dataset]
-        return dict
+        for dataset in [self.train.dataset, self.dev.dataset, self.test.dataset]:
+            for set in dataset:
+                set.torchSet()
+        return

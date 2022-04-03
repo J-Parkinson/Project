@@ -32,12 +32,15 @@ def evaluateAndShowAttention(encoder, decoder, inputSentence):
     print('output =', ' '.join(output_words))
     showAttention(inputSentence, output_words, attentions)
 
-def showPlot(points):
+def showPlot(x, y, title):
     plt.figure()
     fig, ax = plt.subplots()
     # this locator puts ticks at regular intervals
     loc = ticker.MultipleLocator(base=0.2)
     ax.yaxis.set_major_locator(loc)
-    plt.plot(points)
+    plt.plot(x, y)
+    plt.title(title)
+    plt.xlabel("Sentence number")
+    plt.ylabel("Average loss per sentence")
     plt.savefig(f"loss_{time()}.png", dpi=fig.dpi)
     plt.show()

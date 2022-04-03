@@ -21,5 +21,5 @@ def loadDataForEncoderDecoder(filepath, maxIndices=222823):
         [iteration, dataset] = [line.split(" ")[1] for line in data]
         datasetToLoad = name2DTL(dataset)
         print(f"Loading {dataset} dataset")
-        torchObjects, datasetData = simplificationDataToPyTorch(datasetToLoad, maxIndices=maxIndices)
-    return torchObjects, datasetData, iteration, dataset
+        datasetData = simplificationDataToPyTorch(datasetToLoad, maxIndices=maxIndices)
+    return datasetData, iteration, dataset

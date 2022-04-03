@@ -20,8 +20,8 @@ datasets = [asset.train, asset.dev, asset.test,
             wikilarge.train, wikilarge.dev, wikilarge.test]
 
 datasets = list(map(lambda x: x.dataset, datasets))
-datasetsOriginal = list(map(lambda x: list(map(lambda y: y.original, x)), datasets))
-datasetsSimple = list(map(lambda x: list(map(lambda y: y.allSimple, x)), datasets))
+datasetsOriginal = list(map(lambda x: list(map(lambda y: y.originalTokenized, x)), datasets))
+datasetsSimple = list(map(lambda x: list(map(lambda y: y.allSimpleTokenized, x)), datasets))
 
 datasetsOriginal = [item.lower() for sublist in datasetsOriginal for subsublist in sublist for item in subsublist]
 datasetsSimple = [item.lower() for sublist in datasetsSimple for subsublist in sublist for item in subsublist]

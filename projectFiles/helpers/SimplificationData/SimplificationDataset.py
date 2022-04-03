@@ -7,6 +7,7 @@ class simplificationDataset(Dataset):
         self.dataset = simplificationPairSet
         self.curriculumLearning = False
         self.curriculumLearningIndices = []
+        self.randomizedOrder = sorted(list(range(len(self.dataset))))
 
     def __len__(self):
         return len(self.dataset)
@@ -14,8 +15,11 @@ class simplificationDataset(Dataset):
     def __getitem__(self, idx):
         if self.curriculumLearning:
             (xIndex, yIndex) = self.curriculumLearningIndices[idx]
-            return self.dataset[xIndex]
-        return self.dataset[idx]
+            return (self.dataset[xIndex], yIndex)
+        return self.dataset[self.randomizedOrder[idx]]
+
+    def shuffleDataset(self):
+        self.randomizedOrder = sorted(list(range(len(self.dataset))))
 
     def curriculumLearningSortDataset(self, lambdaFunc):
         metricOverDataset = [lambdaFunc(setVal) for setVal in self.dataset]

@@ -17,4 +17,5 @@ datasets = [asset.train, asset.dev, asset.test,
             wikismall.train, wikismall.dev, wikismall.test,
             wikilarge.train, wikilarge.dev, wikilarge.test]
 
-print("Max len sentence:",  max([max([len(sentence["original"]) for sentence in dataset]) for dataset in datasets]))
+print("Max len sentence:",
+      max([max([len(sentence.originalTokenized) for sentence in dataset]) for dataset in datasets]))

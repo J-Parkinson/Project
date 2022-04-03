@@ -11,8 +11,8 @@ from projectFiles.seq2seq.evaluate import loadEncoderDecoderDatasetAndEvaluateAl
 
 
 def _sameSizeCreateSentenceLists(simplificationSets):
-    allOriginal = [set.original for set in simplificationSets]
-    allSimplified = [set.allSimple for set in simplificationSets]
+    allOriginal = [set.originalTokenized for set in simplificationSets]
+    allSimplified = [set.allSimpleTokenized for set in simplificationSets]
     allPredicted = [set.predicted for set in simplificationSets]
 
     originalSmeared = [[sentence for _ in range(len(simplified))] for sentence, simplified in
@@ -81,11 +81,11 @@ def computeAll(simplificationSets, samsa=False):
     allResults = {}
 
     for set in simplificationSets:
-        set.original = " ".join(set.original)
-        set.allSimple = [" ".join(sentence) for sentence in set.allSimple]
+        set.originalTokenized = " ".join(set.originalTokenized)
+        set.allSimpleTokenized = [" ".join(sentence) for sentence in set.allSimpleTokenized]
 
-    allOriginal = [set.original for set in simplificationSets]
-    allSimplifiedOriginal = [set.allSimple for set in simplificationSets]
+    allOriginal = [set.originalTokenized for set in simplificationSets]
+    allSimplifiedOriginal = [set.allSimpleTokenized for set in simplificationSets]
     allSimplified = [list(token) for token in zip(*allSimplifiedOriginal)]
     allPredicted = [set.predicted for set in simplificationSets]
     sameSizeSimplified, sameSizeOriginal, sameSizePredicted = _sameSizeCreateSentenceLists(simplificationSets)

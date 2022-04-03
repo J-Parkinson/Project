@@ -49,15 +49,16 @@ def evaluate(encoder, decoder, input_tensor, max_length=maxLengthSentence):
 def evaluateRandomly(encoder, decoder, dataset, datasetName, n=5):
     for i in range(n):
         set = choice(dataset.test)
-        setObj = simplificationSet(" ".join(set.original), [" ".join(simple) for simple in set.allSimple],
+        setObj = simplificationSet(" ".join(set.originalTokenized),
+                                   [" ".join(simple) for simple in set.allSimpleTokenized],
                                    datasetName, language="en")
         setObj.addIndices(indices)
         setObj.torchSet()
 
         print()
         print('-----------------------------------')
-        print('>', " ".join(set.original))
-        for sentence in set.allSimple:
+        print('>', " ".join(set.originalTokenized))
+        for sentence in set.allSimpleTokenized:
             print('=', " ".join(sentence))
         output_words, attentions = evaluate(encoder, decoder, setObj.originalTorch)
         output_sentence = ' '.join(output_words)
@@ -68,7 +69,8 @@ def evaluateAll(encoder, decoder, dataset, datasetName):
     testData = dataset.test
     setObjList = []
     for set in testData:
-        setObj = simplificationSet(" ".join(set.original), [" ".join(simple) for simple in set.allSimple],
+        setObj = simplificationSet(" ".join(set.originalTokenized),
+                                   [" ".join(simple) for simple in set.allSimpleTokenized],
                                    datasetName, language="en")
         setObj.addIndices(indices)
         setObj.torchSet()

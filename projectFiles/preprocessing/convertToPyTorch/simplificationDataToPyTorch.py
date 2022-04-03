@@ -22,8 +22,8 @@ def simplificationDataToPyTorch(dataset, maxIndices=222823):
 
     datasetLoaded.addIndices(indices, maxIndices=maxIndices)
 
-    torchObjects = datasetLoaded.torchProcess()
+    datasetLoaded.torchProcess()
 
-    return torchObjects, datasetLoaded
+    return datasetLoaded
 
 #simplificationDataToPyTorch(datasetToLoad.asset)
