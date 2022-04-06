@@ -6,15 +6,15 @@ class simplificationDatasets():
         self.test = test
 
     def addIndices(self, indices, maxIndices=222823):
-        for set in self.train.dataset:
+        for set in self.train:
             set.addIndices(indices, maxIndices)
-        for set in self.dev.dataset:
+        for set in self.dev:
             set.addIndices(indices, maxIndices)
-        for set in self.test.dataset:
+        for set in self.test:
             set.addIndices(indices, maxIndices)
 
     def torchProcess(self):
-        for dataset in [self.train.dataset, self.dev.dataset, self.test.dataset]:
+        for dataset in [self.train, self.dev, self.test]:
             for set in dataset:
                 set.torchSet()
         return

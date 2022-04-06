@@ -8,7 +8,7 @@ from projectFiles.seq2seq.constants import device, maxLengthSentence
 # https://pytorch.org/tutorials/intermediate/seq2seq_translation_tutorial.html
 class EncoderRNN(nn.Module):
     def __init__(self, input_size, hidden_size):
-        print(input_size)
+        # print(input_size)
         super(EncoderRNN, self).__init__()
         self.hidden_size = hidden_size
         self.embedding = nn.Embedding(input_size, hidden_size)

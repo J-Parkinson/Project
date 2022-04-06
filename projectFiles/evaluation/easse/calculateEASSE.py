@@ -7,7 +7,6 @@ from easse.samsa import corpus_samsa
 from easse.sari import get_corpus_sari_operation_scores
 
 # from easse.report import write_html_report
-from projectFiles.seq2seq.evaluate import loadEncoderDecoderDatasetAndEvaluateAll
 
 
 def _sameSizeCreateSentenceLists(simplificationSets):
@@ -90,7 +89,8 @@ def computeAll(simplificationSets, samsa=False):
     allPredicted = [set.predicted for set in simplificationSets]
     sameSizeSimplified, sameSizeOriginal, sameSizePredicted = _sameSizeCreateSentenceLists(simplificationSets)
 
-    print(f"Predicted run time: {int((len(allOriginal) + len(sameSizeSimplified)) / 60)} minutes")
+    constantTimePred = 1 if samsa else 0.05
+    print(f"Predicted run time: {int((len(allOriginal) + len(sameSizeSimplified)) / 60 * constantTimePred)} minutes")
 
     print("Computing FKCL")
 
@@ -157,6 +157,5 @@ def computeAll(simplificationSets, samsa=False):
         print(f"{resultName}: {result}")
     return allResults
 
-
-evaluatedModelData = loadEncoderDecoderDatasetAndEvaluateAll("seq2seq/trainedModels/optimal_asset_025043")
-computeAll(evaluatedModelData)
+# evaluatedModelData = loadEncoderDecoderDatasetAndEvaluateAll("seq2seq/trainedModels/optimal_asset_025043")
+# computeAll(evaluatedModelData)

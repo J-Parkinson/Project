@@ -3,12 +3,13 @@ from random import random
 import torch
 from torch import optim, nn
 
-from projectFiles.helpers.epochData import epochData
 from projectFiles.helpers.epochTiming import Timer
 from projectFiles.seq2seq.constants import device, SOS, teacher_forcing_ratio, EOS, maxLengthSentence
+from projectFiles.seq2seq.plots import showPlot
 
 
-def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=maxLengthSentence):
+def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion,
+          max_length=maxLengthSentence):
     encoder_hidden = encoder.initHidden()
 
     encoder_optimizer.zero_grad()
@@ -97,125 +98,96 @@ def validationLoss(input_tensors, target_tensors_set, encoder, decoder, criterio
     return sum(losses) / len(losses)
 
 
-def trainMultipleIterations(trainingMetadata=None, encoder=None, decoder=None, allData=None, datasetName=None,
-                            startIter=0):
-    if encoder and decoder and allData and datasetName:
-        trainingMetadata = epochData(encoder, decoder, allData, datasetName, startIter=startIter)
-    if not epochData:
-        raise Exception(
-            "Inadequate input -- provide either an epochData object or encoder/decoder/trainingData/datasetName")
-
-    while trainingMetadata.epochFinished:
-        print(f"\n\nEpoch {trainingMetadata.epochNo}:")
-        trainingMetadata = trainOneIteration(trainingMetadata)
-        trainingMetadata.startIter = 0
-        trainingMetadata.nextEpoch()
-
-    return trainingMetadata
-
-
-def trainOneIteration(trainingMetadata):
-    # All metadata items in trainingMetadata (epochData) are either
-    # - passed in as parameters
-    # - need to be passed between epochs
-
-    # Needs to change each epoch
+def trainIters(encoder, decoder, allData, datasetName, locationToSaveTo="trainedModels/", print_every=150,
+               plot_every=100, learning_rate=0.01, startIter=0):
     timer = Timer()
-
-    # Local to each epoch, need not be saved
+    plot_losses = []
+    plot_dev_losses = []
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
 
-    # Local to each epoch
-    encoder_optimizer = optim.SGD(trainingMetadata.encoder.parameters(), lr=trainingMetadata.learningRate)
-    decoder_optimizer = optim.SGD(trainingMetadata.decoder.parameters(), lr=trainingMetadata.learningRate)
+    encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
+    decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
     criterion = nn.NLLLoss()
+    minLoss = 999999999999999999999999999999999999
+    minDevLoss = 999999999999999999999999999999999999
+    optimalEncoder = None
+    optimalDecoder = None
+    fileSaveName = f"{locationToSaveTo}optimal_{datasetName}_{timer.getStartTime()}".replace(":", "")
+    notFirstYet = startIter == 0
+    i = 0
 
-    iLocal = 0
-
-    trainingData = trainingMetadata.data.train
-    validationData = trainingMetadata.data.dev
-
-    plot_loss_avg = devLoss = 0
+    trainingData = allData.train
+    validationData = allData.dev
+    curriculumLearning = True
 
     for m, pair in enumerate(trainingData):
-        if isinstance(pair, tuple):
-            targetTensorToUse = pair[1]
-            pair = pair[0]
-            target_tensors = [pair.allSimpleTorches[targetTensorToUse]]
-        else:
-            target_tensors = pair.allSimpleTorches
         input_tensor = pair.originalTorch
-
+        target_tensors = pair.allSimpleTorches
         j = 0
-
-        while iLocal < trainingMetadata.startIter and j < len(target_tensors):
-            iLocal += 1
+        l = 0
+        while i < startIter and j < len(target_tensors):
+            i += 1
             j += 1
-
         if j == len(target_tensors):
             continue
 
         for k, target_tensor in enumerate(target_tensors):
-            iLocal += 1
-            trainingMetadata.iGlobal += 1
-            print(trainingMetadata.iGlobal)
-
-            if trainingMetadata.checkIfEpochShouldEnd():
-                trainingMetadata.epochFinished = False
-                return trainingMetadata
+            i += 1
+            if i > 300:
+                continue
+            print(i)
 
             if k < j:
                 continue
 
-            loss = train(input_tensor, target_tensor, trainingMetadata.encoder,
-                         trainingMetadata.decoder, encoder_optimizer, decoder_optimizer, criterion)
+            l += len(target_tensors)
+
+            loss = train(input_tensor, target_tensor, encoder,
+                         decoder, encoder_optimizer, decoder_optimizer, criterion)
             print_loss_total += loss
             plot_loss_total += loss
 
-            # We split print_every and plot_every here back into two
-            # plot_every is controlled by iGlobal, print_every is controlled by iLocal
-
-            if (trainingMetadata.iGlobal + 1) % trainingMetadata.valCheckEvery == 0:
-                if not trainingMetadata.notFirstYet:
-                    trainingMetadata.notFirstYet = True
+            if (i + 1) % print_every == 0:
+                if not notFirstYet:
+                    notFirstYet = True
                 else:
-                    print_loss_avg = print_loss_total / trainingMetadata.valCheckEvery
-                    trainingMetadata.minLoss = min(trainingMetadata.minLoss, print_loss_total)
+                    print_loss_avg = print_loss_total / print_every
+                    minLoss = min(minLoss, print_loss_total)
 
                     # Calculate validation loss
                     devLoss = validationLoss([dataVal.originalTorch for dataVal in validationData],
                                              [dataVal.allSimpleTorches for dataVal in validationData],
-                                             trainingMetadata.encoder, trainingMetadata.decoder, criterion)
-                    trainingMetadata.minDevLoss = min(trainingMetadata.minDevLoss, devLoss)
+                                             encoder, decoder, criterion)
+                    minDevLoss = min(minDevLoss, devLoss)
 
-                    if trainingMetadata.minDevLoss == devLoss:
-                        trainingMetadata.lastIterOfDevLossImp = trainingMetadata.iGlobal
-                        trainingMetadata.optimalEncoder = trainingMetadata.encoder.state_dict()
-                        trainingMetadata.optimalDecoder = trainingMetadata.decoder.state_dict()
-                        with open(f"{trainingMetadata.fileSaveDir}/epochRun.txt", "w+") as file:
-                            file.write(trainingMetadata.getAttributeStr(iLocal))
-                        torch.save(trainingMetadata.optimalEncoder, f"{trainingMetadata.fileSaveDir}/encoder.pt")
-                        torch.save(trainingMetadata.optimalDecoder, f"{trainingMetadata.fileSaveDir}/decoder.pt")
+                    if minDevLoss == devLoss:
+                        optimalEncoder = encoder.state_dict()
+                        optimalDecoder = decoder.state_dict()
+                        with open(f"{fileSaveName}.txt", "w+") as file:
+                            file.write(f"Iteration {i + 1}\nDataset: {datasetName}")
+                        torch.save(optimalEncoder, f"{fileSaveName}_encoder.pt")
+                        torch.save(optimalDecoder, f"{fileSaveName}_decoder.pt")
 
                     print_loss_total = 0
 
                     print("_____________________")
-                    print(f"Iteration {iLocal + 1}")
+                    print(f"Iteration {i + 1}")
                     timer.printTimeDiff()
                     timer.printTimeBetweenChecks()
+                    timer.calculateTimeLeftToRun(i + 1, len(trainingData) * l / m)
                     print(f"Loss average: {print_loss_avg}")
-                    print(
-                        f"Min avg loss per {trainingMetadata.valCheckEvery} iterations: {trainingMetadata.minLoss / trainingMetadata.valCheckEvery}")
+                    print(f"Min avg loss per {print_every} iterations: {minLoss / print_every}")
                     print(f"Validation loss: {devLoss}")
 
-                    plot_loss_avg = plot_loss_total / trainingMetadata.valCheckEvery
-                    trainingMetadata.plot_losses.append((plot_loss_avg, trainingMetadata.iGlobal + 1))
+                    plot_loss_avg = plot_loss_total / plot_every
+                    plot_losses.append((plot_loss_avg, i))
                     plot_loss_total = 0
 
-                    trainingMetadata.plot_dev_losses.append((devLoss, trainingMetadata.iGlobal + 1))
+                    plot_dev_losses.append((devLoss, i))
 
-    trainingMetadata.plot_losses.append((plot_loss_avg, trainingMetadata.iGlobal + 1))
-    trainingMetadata.plot_dev_losses.append((devLoss, trainingMetadata.iGlobal + 1))
-
-    return trainingMetadata
+    showPlot(*list(zip(*plot_losses)),
+             f"Training losses for {datasetName} {'using' if curriculumLearning else 'without'} curriculum learning")
+    showPlot(*list(zip(*plot_dev_losses)),
+             f"Training losses for {datasetName} {'using' if curriculumLearning else 'without'} curriculum learning")
+    return optimalEncoder, optimalDecoder
