@@ -9,10 +9,6 @@ from projectFiles.seq2seq.training import trainMultipleIterations
 def runSeq2Seq(dataset, hiddenLayerWidth=256, maxIndices=222823, curriculumLearningMD=None):
     datasetLoaded = simplificationDataToPyTorch(dataset, maxIndices=maxIndices)
     print("Dataset loaded")
-    print(datasetLoaded.train.curriculumLearning)
-    print(datasetLoaded.train.curriculumLearningPercentage)
-    print(len(datasetLoaded.train))
-    print(len(datasetLoaded.train.dataset))
     if curriculumLearningMD:
         datasetLoaded = initialiseCurriculumLearning(datasetLoaded, curriculumLearningMD)
     # 0=SOS, 1=EOS, 2=0', etc.
@@ -20,11 +16,6 @@ def runSeq2Seq(dataset, hiddenLayerWidth=256, maxIndices=222823, curriculumLearn
     encoder = EncoderRNN(maxIndices, hiddenLayerWidth).to(device)
     decoder = AttnDecoderRNN(hiddenLayerWidth, maxIndices, dropout=0.3).to(device)
     print("Begin iterations")
-    print(datasetLoaded.train.curriculumLearning)
-    print(datasetLoaded.train.curriculumLearningPercentage)
-    print(len(datasetLoaded.train))
-    print(len(datasetLoaded.train.dataset))
-
     epochData = trainMultipleIterations(encoder=encoder, decoder=decoder, allData=datasetLoaded,
                                         datasetName=dsName(dataset))
     return epochData

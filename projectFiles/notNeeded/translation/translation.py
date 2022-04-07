@@ -78,15 +78,15 @@ models, respectively.
 
 **Requirements**
 """
-from io import open
-import unicodedata
-import re
 import random
+import re
+from io import open
 
 import torch
 import torch.nn as nn
-from torch import optim
 import torch.nn.functional as F
+import unicodedata
+from torch import optim
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device.type)
@@ -666,7 +666,6 @@ def trainIters(encoder, decoder, n_iters, print_every=1000, plot_every=100, lear
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-import numpy as np
 
 
 def showPlot(points):

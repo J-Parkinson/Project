@@ -32,7 +32,7 @@ def evaluateAndShowAttention(encoder, decoder, inputSentence):
     print('output =', ' '.join(output_words))
     showAttention(inputSentence, output_words, attentions)
 
-def showPlot(y, x, title, saveLoc):
+def showPlot(x, y, title, saveLoc):
     plt.figure()
     fig, ax = plt.subplots()
     # this locator puts ticks at regular intervals

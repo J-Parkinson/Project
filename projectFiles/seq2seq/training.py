@@ -210,12 +210,12 @@ def trainOneIteration(trainingMetadata):
                     print(f"Validation loss: {devLoss}")
 
                     plot_loss_avg = plot_loss_total / trainingMetadata.valCheckEvery
-                    trainingMetadata.plot_losses.append((plot_loss_avg, trainingMetadata.iGlobal + 1))
+                    trainingMetadata.plot_losses.append((trainingMetadata.iGlobal + 1, plot_loss_avg))
                     plot_loss_total = 0
 
-                    trainingMetadata.plot_dev_losses.append((devLoss, trainingMetadata.iGlobal + 1))
+                    trainingMetadata.plot_dev_losses.append((trainingMetadata.iGlobal + 1, devLoss))
 
-    trainingMetadata.plot_losses.append((plot_loss_avg, trainingMetadata.iGlobal + 1))
-    trainingMetadata.plot_dev_losses.append((devLoss, trainingMetadata.iGlobal + 1))
+    trainingMetadata.plot_losses.append((trainingMetadata.iGlobal + 1, plot_loss_avg))
+    trainingMetadata.plot_dev_losses.append((trainingMetadata.iGlobal + 1, devLoss))
 
     return trainingMetadata

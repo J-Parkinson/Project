@@ -11,12 +11,16 @@ from projectFiles.seq2seq.plots import showPlot
 class epochData:
     def __init__(self, encoder, decoder, data, datasetName="", locationToSaveTo="seq2seq/trainedModels/",
                  learningRate=0.01,
-                 startIter=0, timer=Timer(), plot_losses=[], plot_dev_losses=[], minLoss=999999999,
+                 startIter=0, timer=Timer(), plot_losses=None, plot_dev_losses=None, minLoss=999999999,
                  minDevLoss=999999999,
                  lastIterOfDevLossImp=0, optimalEncoder=None, optimalDecoder=None, fileSaveDir=None,
                  iGlobal=0,
                  valCheckEvery=50,
                  earlyStopAfterNoImpAfterIter=None):
+        if plot_dev_losses is None:
+            plot_dev_losses = []
+        if plot_losses is None:
+            plot_losses = []
         if not fileSaveDir:
             fileSaveDir = f"{projectLoc}/{locationToSaveTo}{datasetName}_CL-{data.train.curriculumLearning.name}_{timer.getStartTime().replace(':', '')}"
         if not earlyStopAfterNoImpAfterIter:
@@ -63,11 +67,11 @@ class epochData:
 
     def savePlotData(self):
         with open(f"{self.fileSaveDir}/plotData.txt", "w+") as file:
-            for y, x in self.plot_losses:
+            for x, y in self.plot_losses:
                 file.write(f"{x} {y}\n")
 
         with open(f"{self.fileSaveDir}/plotDataDev.txt", "w+") as fileDev:
-            for y, x in self.plot_dev_losses:
+            for x, y in self.plot_dev_losses:
                 fileDev.write(f"{x} {y}\n")
 
     def saveTestData(self):
