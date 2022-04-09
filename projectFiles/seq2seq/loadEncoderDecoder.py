@@ -7,7 +7,7 @@ from projectFiles.seq2seq.constants import device
 from projectFiles.seq2seq.seq2seqModel import EncoderRNN, AttnDecoderRNN
 
 
-def loadEncoderDecoder(filepath, hiddenLayerWidth=256, maxIndices=222823):
+def loadEncoderDecoder(filepath, hiddenLayerWidth=256, maxIndices=253401):
     encoder = EncoderRNN(maxIndices, hiddenLayerWidth).to(device)
     decoder = AttnDecoderRNN(hiddenLayerWidth, maxIndices, dropout=0.3).to(device)
     encoder.load_state_dict(torch.load(f"{projectLoc}/{filepath}_encoder.pt"))
@@ -15,7 +15,8 @@ def loadEncoderDecoder(filepath, hiddenLayerWidth=256, maxIndices=222823):
     print("Encoder and decoder loaded")
     return encoder, decoder
 
-def loadDataForEncoderDecoder(filepath, maxIndices=222823):
+
+def loadDataForEncoderDecoder(filepath, maxIndices=253401):
     with open(f"{projectLoc}/{filepath}.txt", "r+") as file:
         data = file.readlines()
         [iteration, dataset] = [line.split(" ")[1] for line in data]

@@ -5,7 +5,7 @@ class simplificationDatasets():
         self.dev = dev
         self.test = test
 
-    def addIndices(self, indices, maxIndices=222823):
+    def addIndices(self, indices, maxIndices=253401):
         for set in self.train:
             set.addIndices(indices, maxIndices)
         for set in self.dev:

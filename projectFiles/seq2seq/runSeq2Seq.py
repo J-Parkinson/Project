@@ -6,7 +6,7 @@ from projectFiles.seq2seq.seq2seqModel import EncoderRNN, AttnDecoderRNN
 from projectFiles.seq2seq.training import trainMultipleIterations
 
 
-def runSeq2Seq(dataset, hiddenLayerWidth=256, maxIndices=222823, curriculumLearningMD=None):
+def runSeq2Seq(dataset, hiddenLayerWidth=256, maxIndices=253401, curriculumLearningMD=None):
     datasetLoaded = simplificationDataToPyTorch(dataset, maxIndices=maxIndices)
     print("Dataset loaded")
     if curriculumLearningMD:
@@ -20,7 +20,7 @@ def runSeq2Seq(dataset, hiddenLayerWidth=256, maxIndices=222823, curriculumLearn
                                         datasetName=dsName(dataset))
     return epochData
 
-# def runSeq2SeqFromExisting(filepath, hiddenLayerWidth=256, maxIndices=222823):
+# def runSeq2SeqFromExisting(filepath, hiddenLayerWidth=256, maxIndices=253401):
 #    encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
 #
 #    datasetLoaded, datasetOrig, iteration, dataset = loadDataForEncoderDecoder(filepath, maxIndices)

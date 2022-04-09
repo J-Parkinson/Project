@@ -76,7 +76,7 @@ def evaluateAll(encoder, decoder, dataset):
     return testData
 
 
-def loadEncoderDecoderDatasetAndEvaluateRandomly(filepath, hiddenLayerWidth=256, maxIndices=222823):
+def loadEncoderDecoderDatasetAndEvaluateRandomly(filepath, hiddenLayerWidth=256, maxIndices=253401):
     encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
 
     _, datasetData, _, datasetName = loadDataForEncoderDecoder(filepath, maxIndices)
@@ -84,7 +84,7 @@ def loadEncoderDecoderDatasetAndEvaluateRandomly(filepath, hiddenLayerWidth=256,
     evaluateRandomly(encoder, decoder, datasetData)
 
 
-def loadEncoderDecoderDatasetAndEvaluateAll(filepath, hiddenLayerWidth=256, maxIndices=222823):
+def loadEncoderDecoderDatasetAndEvaluateAll(filepath, hiddenLayerWidth=256, maxIndices=253401):
     encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
 
     _, datasetData, _, datasetName = loadDataForEncoderDecoder(filepath, maxIndices)

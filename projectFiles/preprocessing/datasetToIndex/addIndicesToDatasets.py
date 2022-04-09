@@ -5,6 +5,20 @@ from projectFiles.preprocessing.loadDatasets.loadNewsala import loadNewsala
 from projectFiles.preprocessing.loadDatasets.loadWikiLarge import loadWikiLarge
 from projectFiles.preprocessing.loadDatasets.loadWikiSmall import loadWikiSmall
 
+
+def processDataset(dataset):
+    dataset = dataset.dataset
+    datasetOriginal = [sent.originalTokenized for sent in dataset]
+    datasetSimple = [sent.allSimpleTokenized for sent in dataset]
+
+    datasetOriginalFlatten = [word for sent in datasetOriginal for word in sent]
+    datasetSimpleFlatten = [word for sents in datasetSimple for sent in sents for word in sent]
+
+    datasetsBothFlatten = datasetOriginalFlatten + datasetSimpleFlatten
+    counter = Counter(datasetsBothFlatten)
+    return counter
+
+
 asset = loadAsset()
 print("asset")
 newsala = loadNewsala()
@@ -14,23 +28,17 @@ print("wikismall")
 wikilarge = loadWikiLarge()
 print("wikilarge")
 
-datasets = [asset.train, asset.dev, asset.test,
-            newsala.train, newsala.dev, newsala.test,
-            wikismall.train, wikismall.dev, wikismall.test,
-            wikilarge.train, wikilarge.dev, wikilarge.test]
+counter = Counter()
 
-datasets = list(map(lambda x: x.dataset, datasets))
-datasetsOriginal = list(map(lambda x: list(map(lambda y: y.originalTokenized, x)), datasets))
-datasetsSimple = list(map(lambda x: list(map(lambda y: y.allSimpleTokenized, x)), datasets))
+for dataset in [asset.train, asset.dev, asset.test,
+                newsala.train, newsala.dev, newsala.test,
+                wikismall.train, wikismall.dev, wikismall.test,
+                wikilarge.train, wikilarge.dev, wikilarge.test]:
+    counterToAdd = processDataset(dataset)
+    counter += counterToAdd
 
-datasetsOriginal = [item.lower() for sublist in datasetsOriginal for subsublist in sublist for item in subsublist]
-datasetsSimple = [item.lower() for sublist in datasetsSimple for subsublist in sublist for item in subsublist]
+words = [word[0] for word in counter.most_common()]
 
-datasetsOriginal = Counter(datasetsOriginal)
-datasetsSimple = Counter(datasetsSimple)
-datasets = datasetsOriginal + datasetsSimple
-datasets = [x[0] for x in datasets.most_common()]
-
-with open("indices.txt", "w+", encoding="utf-8") as indexFile:
-    dataToWrite = "\n".join(list(datasets))
+with open("indicesNew.txt", "w+", encoding="utf-8") as indexFile:
+    dataToWrite = "\n".join(list(words))
     indexFile.write(dataToWrite)

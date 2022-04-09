@@ -2,3 +2,4 @@ conda_env/
 datasets/
 easse/
 .idea/
+projectFiles/constants.py

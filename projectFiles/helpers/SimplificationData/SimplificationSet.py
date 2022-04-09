@@ -15,7 +15,6 @@ class simplificationSet():
         self._makeReplacementsGEC()
         self._tokenise(dataset)
         self.dataset = dataset
-        self.calculatedSimplicityFactor = 0
         self.language = language
         self.originalIndices = None
         self.allSimpleIndices = None
@@ -50,14 +49,14 @@ class simplificationSet():
                                        self.allSimpleTokenized]
         return
 
-    def _safeSearch(self, indices, word, maxIndices=222823):
+    def _safeSearch(self, indices, word, maxIndices=253401):
         try:
-            return indices[word.lower()]
+            return indices[word]
         except:
             # indices start at 0
             return maxIndices - 1
 
-    def addIndices(self, indices, maxIndices=222823):
+    def addIndices(self, indices, maxIndices=253401):
         self.originalIndices = [min(self._safeSearch(indices, word, maxIndices - 2), maxIndices - 3) + 2 for word in
                                 self.originalTokenized]
         self.allSimpleIndices = [
@@ -97,5 +96,5 @@ class simplificationSet():
 
     # Returns a list, one for each
     def getMetric(self, lambdaFunc):
-        return [lambdaFunc(self.originalTokenized, simplifiedSentence, self.originalIndices, simplifiedIndices) for
-                simplifiedSentence, simplifiedIndices in zip(self.allSimpleTokenized, self.allSimpleIndices)]
+        return [lambdaFunc(self.originalTokenized, simplifiedSentence) for
+                simplifiedSentence in self.allSimpleTokenized]
