@@ -6,7 +6,7 @@ from projectFiles.preprocessing.loadDatasets.loadWikiSmall import loadWikiSmall
 from projectFiles.seq2seq.constants import indices
 
 
-def simplificationDataToPyTorch(dataset, maxIndices=222823):
+def simplificationDataToPyTorch(dataset, maxIndices=253401):
     if dataset == datasetToLoad.asset:
         print("Loading ASSET")
         datasetLoaded = loadAsset()
