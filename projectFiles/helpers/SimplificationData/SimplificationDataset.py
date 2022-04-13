@@ -34,7 +34,7 @@ class simplificationDataset(Dataset):
 
     def __getitem__(self, idx):
         if isinstance(idx, slice):
-            return [self[idxV] for idxV in range(*idx.indices(3))]
+            return [self[idxV] for idxV in range(idx.start or 0, idx.stop or len(self), idx.step or 1)]
         elif isinstance(idx, int):
             if idx >= self.__len__():
                 raise IndexError(

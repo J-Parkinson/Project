@@ -1,4 +1,8 @@
+import torch
+
 from projectFiles.helpers.DatasetToLoad import datasetToLoad
+from projectFiles.seq2seq.constants import device
+
 
 class simplificationSet():
     def __init__(self, original, allSimple, dataset, language="en"):
@@ -11,6 +15,10 @@ class simplificationSet():
         self.dataset = dataset
         self.language = language
         self.predicted = ""
+        self.originalIndices = None
+        self.allSimpleIndices = None
+        self.originalTorch = None
+        self.allSimpleTorches = None
 
     def _removeEscapedBracketsFromSentenceWiki(self, sentence):
         for (frm, to) in [("-LRB-", "("), ("-RRB-", ")"), ("-LSB-", "["), ("-RSB-", "]"), ("-LCB-", "{"), ("-RCB-", "}"), ("-LAB-", "<"), ("-RAB-", ">")]:
@@ -37,3 +45,10 @@ class simplificationSet():
     def getMetric(self, lambdaFunc):
         return [lambdaFunc(self.originalTokenized, simplifiedSentence) for
                 simplifiedSentence in self.allSimpleTokenized]
+
+    def torchSet(self):
+        self.originalTorch = torch.tensor(self.originalIndices, dtype=torch.long, device=device).view(-1, 1)
+        self.allSimpleTorches = [torch.tensor(simpleIndex, dtype=torch.long, device=device).view(-1, 1) for simpleIndex
+                                 in self.allSimpleIndices]
+
+        return (self.originalTorch, self.allSimpleTorches)

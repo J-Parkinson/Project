@@ -3,10 +3,9 @@ from projectFiles.preprocessing.loadDatasets.loadAsset import loadAsset
 from projectFiles.preprocessing.loadDatasets.loadNewsala import loadNewsala
 from projectFiles.preprocessing.loadDatasets.loadWikiLarge import loadWikiLarge
 from projectFiles.preprocessing.loadDatasets.loadWikiSmall import loadWikiSmall
-from projectFiles.seq2seq.constants import indices
 
 
-def simplificationDataToPyTorch(dataset, maxIndices=253401):
+def simplificationDataToPyTorch(dataset, embedding):
     if dataset == datasetToLoad.asset:
         print("Loading ASSET")
         datasetLoaded = loadAsset()
@@ -20,9 +19,10 @@ def simplificationDataToPyTorch(dataset, maxIndices=253401):
         print("Loading WikiSmall")
         datasetLoaded = loadWikiSmall()
 
-    datasetLoaded.addIndices(indices, maxIndices=maxIndices)
+    print("Processing dataset")
 
-    datasetLoaded.torchProcess()
+    # We need to convert the imported simplificationSets into either NLTK or BERT sets depending on the embedding
+    datasetLoaded.loadFromPickle(embedding)
 
     return datasetLoaded
 

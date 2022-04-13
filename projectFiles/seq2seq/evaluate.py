@@ -3,18 +3,26 @@ from random import choice
 import torch
 
 from projectFiles.seq2seq.constants import EOS, SOS, device, maxLengthSentence, indicesRaw
-from projectFiles.seq2seq.loadEncoderDecoder import loadEncoderDecoder, loadDataForEncoderDecoder
+# from projectFiles.seq2seq.deprecated.loadEncoderDecoder import loadEncoderDecoder, loadDataForEncoderDecoder
+from projectFiles.seq2seq.embeddingLayers import embeddingLayer
 
 
-def evaluate(encoder, decoder, input_tensor, max_length=maxLengthSentence):
+def evaluate(encoder, decoder, input_tensor, embedding, max_length=maxLengthSentence):
     with torch.no_grad():
         input_length = input_tensor.size()[0]
         encoder_hidden = encoder.initHidden()
 
         encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
 
+        # There are two 'embeddding' layers - one here, and one inside the encoder.
+        # This is because for indices embeddings it needs to store learnt embeddings, whilst for Bert and Glove it uses
+        # pretrained embeddings
+        # However, BERT needs context for the entire sentence, hence this is done here outside the input loop.
+        input_tensor_embedding_func = embeddingLayer(embedding, encoder.input_size, encoder.hidden_size)
+        input_tensor_embedding = input_tensor_embedding_func(input_tensor)
+
         for ei in range(input_length):
-            encoder_output, encoder_hidden = encoder(input_tensor[ei],
+            encoder_output, encoder_hidden = encoder(input_tensor_embedding[ei],
                                                      encoder_hidden)
             encoder_outputs[ei] += encoder_output[0, 0]
 
@@ -45,7 +53,7 @@ def evaluate(encoder, decoder, input_tensor, max_length=maxLengthSentence):
 # We can evaluate random sentences from the training set and print out the
 # input, target, and output to make some subjective quality judgements:
 
-def evaluateRandomly(encoder, decoder, dataset, n=5):
+def evaluateRandomly(encoder, decoder, dataset, embedding, n=5):
     for i in range(n):
         set = choice(dataset.test.dataset)
         print()
@@ -53,7 +61,7 @@ def evaluateRandomly(encoder, decoder, dataset, n=5):
         print('>', " ".join(set.originalTokenized))
         for sentence in set.allSimpleTokenized:
             print('=', " ".join(sentence))
-        output_words, attentions = evaluate(encoder, decoder, set.originalTorch)
+        output_words, attentions = evaluate(encoder, decoder, set.originalTorch, embedding)
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
 
@@ -61,34 +69,34 @@ def evaluateRandomly(encoder, decoder, dataset, n=5):
 def evaluateAllEpoch(epochData):
     testData = epochData.data.test.dataset
     for set in testData:
-        output_words, attentions = evaluate(epochData.encoder, epochData.decoder, set.originalTorch)
+        output_words, attentions = evaluate(epochData.encoder, epochData.decoder, set.originalTorch,
+                                            epochData.embedding)
         output_sentence = ' '.join(output_words)
         set.addPredicted(output_sentence)
     return epochData
 
 
-def evaluateAll(encoder, decoder, dataset):
+def evaluateAll(encoder, decoder, dataset, embedding):
     testData = dataset.test.dataset
     for set in testData:
-        output_words, attentions = evaluate(encoder, decoder, set.originalTorch)
+        output_words, attentions = evaluate(encoder, decoder, set.originalTorch, embedding)
         output_sentence = ' '.join(output_words)
         set.addPredicted(output_sentence)
     return testData
 
-
-def loadEncoderDecoderDatasetAndEvaluateRandomly(filepath, hiddenLayerWidth=256, maxIndices=253401):
-    encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
-
-    _, datasetData, _, datasetName = loadDataForEncoderDecoder(filepath, maxIndices)
-
-    evaluateRandomly(encoder, decoder, datasetData)
-
-
-def loadEncoderDecoderDatasetAndEvaluateAll(filepath, hiddenLayerWidth=256, maxIndices=253401):
-    encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
-
-    _, datasetData, _, datasetName = loadDataForEncoderDecoder(filepath, maxIndices)
-
-    return evaluateAll(encoder, decoder, datasetData)
+# def loadEncoderDecoderDatasetAndEvaluateRandomly(filepath, hiddenLayerWidth=256, maxIndices=253401):
+#    encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
+#
+#    _, datasetData, _, datasetName = loadDataForEncoderDecoder(filepath, maxIndices)
+#
+#    evaluateRandomly(encoder, decoder, datasetData)
+#
+#
+# def loadEncoderDecoderDatasetAndEvaluateAll(filepath, hiddenLayerWidth=256, maxIndices=253401):
+#    encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
+#
+#    _, datasetData, _, datasetName = loadDataForEncoderDecoder(filepath, maxIndices)
+#
+#    return evaluateAll(encoder, decoder, datasetData)
 
 # loadEncoderDecoderDatasetAndEvaluateAll("seq2seq/trainedModels/optimal_asset_025043")

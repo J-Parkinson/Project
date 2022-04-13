@@ -2,22 +2,29 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from projectFiles.helpers.embeddingType import embeddingType
 from projectFiles.seq2seq.constants import device, maxLengthSentence
 
 
+# NEED TO DEAL WITH [EOS] IN ENCODER
+
 # https://pytorch.org/tutorials/intermediate/seq2seq_translation_tutorial.html
+# self.embedding = nn.Embedding(input_size, hidden_size)
 class EncoderRNN(nn.Module):
-    def __init__(self, input_size, hidden_size):
+    def __init__(self, input_size, hidden_size, embedding):
         # print(input_size)
         super(EncoderRNN, self).__init__()
         self.hidden_size = hidden_size
-        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.input_size = input_size
         self.gru = nn.GRU(hidden_size, hidden_size)
+        if embedding == embeddingType.indices:
+            self.embedding = nn.Embedding(input_size, hidden_size)
+        else:
+            self.embedding = lambda x: x
 
     def forward(self, input, hidden):
         embedded = self.embedding(input).view(1, 1, -1)
-        output = embedded
-        output, hidden = self.gru(output, hidden)
+        output, hidden = self.gru(embedded, hidden)
         return output, hidden
 
     def initHidden(self):

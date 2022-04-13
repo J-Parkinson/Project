@@ -6,9 +6,11 @@ from torch import optim, nn
 from projectFiles.helpers.epochData import epochData
 from projectFiles.helpers.epochTiming import Timer
 from projectFiles.seq2seq.constants import device, SOS, teacher_forcing_ratio, EOS, maxLengthSentence
+from projectFiles.seq2seq.embeddingLayers import embeddingLayer
 
 
-def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=maxLengthSentence):
+def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, embedding,
+          max_length=maxLengthSentence):
     encoder_hidden = encoder.initHidden()
 
     encoder_optimizer.zero_grad()
@@ -21,9 +23,16 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, deco
 
     loss = 0
 
+    # There are two 'embeddding' layers - one here, and one inside the encoder.
+    # This is because for indices embeddings it needs to store learnt embeddings, whilst for Bert and Glove it uses
+    # pretrained embeddings
+    # However, BERT needs context for the entire sentence, hence this is done here outside the input loop.
+    input_tensor_embedding_func = embeddingLayer(embedding, encoder.input_size, encoder.hidden_size)
+    input_tensor_embedding = input_tensor_embedding_func(input_tensor)
+
     for ei in range(input_length):
         encoder_output, encoder_hidden = encoder(
-            input_tensor[ei], encoder_hidden)
+            input_tensor_embedding[ei], encoder_hidden)
         encoder_outputs[ei] = encoder_output[0, 0]
 
     decoder_input = torch.tensor([[SOS]], device=device)
@@ -60,7 +69,8 @@ def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, deco
     return loss.item() / target_length
 
 
-def validationLoss(input_tensors, target_tensors_set, encoder, decoder, criterion, max_length=maxLengthSentence):
+def validationLoss(input_tensors, target_tensors_set, encoder, decoder, criterion, embedding,
+                   max_length=maxLengthSentence):
     losses = []
     with torch.no_grad():
         for input_tensor, target_tensors in zip(input_tensors, target_tensors_set):
@@ -74,9 +84,16 @@ def validationLoss(input_tensors, target_tensors_set, encoder, decoder, criterio
 
                 loss = 0
 
+                # There are two 'embeddding' layers - one here, and one inside the encoder.
+                # This is because for indices embeddings it needs to store learnt embeddings, whilst for Bert and Glove it uses
+                # pretrained embeddings
+                # However, BERT needs context for the entire sentence, hence this is done here outside the input loop.
+                input_tensor_embedding_func = embeddingLayer(embedding, encoder.input_size, encoder.hidden_size)
+                input_tensor_embedding = input_tensor_embedding_func(input_tensor)
+
                 for ei in range(input_length):
                     encoder_output, encoder_hidden = encoder(
-                        input_tensor[ei], encoder_hidden)
+                        input_tensor_embedding[ei], encoder_hidden)
                     encoder_outputs[ei] = encoder_output[0, 0]
 
                 decoder_input = torch.tensor([[SOS]], device=device)
@@ -98,9 +115,9 @@ def validationLoss(input_tensors, target_tensors_set, encoder, decoder, criterio
 
 
 def trainMultipleIterations(trainingMetadata=None, encoder=None, decoder=None, allData=None, datasetName=None,
-                            startIter=0):
-    if encoder and decoder and allData and datasetName:
-        trainingMetadata = epochData(encoder, decoder, allData, datasetName, startIter=startIter)
+                            embedding=None, startIter=0):
+    if encoder and decoder and allData and datasetName and embedding:
+        trainingMetadata = epochData(encoder, decoder, allData, embedding, datasetName, startIter=startIter)
     if not epochData:
         raise Exception(
             "Inadequate input -- provide either an epochData object or encoder/decoder/trainingData/datasetName")
@@ -168,8 +185,8 @@ def trainOneIteration(trainingMetadata):
             if k < j:
                 continue
 
-            loss = train(input_tensor, target_tensor, trainingMetadata.encoder,
-                         trainingMetadata.decoder, encoder_optimizer, decoder_optimizer, criterion)
+            loss = train(input_tensor, target_tensor, trainingMetadata.encoder, trainingMetadata.decoder,
+                         encoder_optimizer, decoder_optimizer, criterion, trainingMetadata.embedding)
             print_loss_total += loss
             plot_loss_total += loss
 
@@ -186,7 +203,8 @@ def trainOneIteration(trainingMetadata):
                     # Calculate validation loss
                     devLoss = validationLoss([dataVal.originalTorch for dataVal in validationData],
                                              [dataVal.allSimpleTorches for dataVal in validationData],
-                                             trainingMetadata.encoder, trainingMetadata.decoder, criterion)
+                                             trainingMetadata.encoder, trainingMetadata.decoder, criterion,
+                                             trainingMetadata.embedding)
                     trainingMetadata.minDevLoss = min(trainingMetadata.minDevLoss, devLoss)
 
                     if trainingMetadata.minDevLoss == devLoss:
