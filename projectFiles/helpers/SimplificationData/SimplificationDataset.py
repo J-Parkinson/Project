@@ -41,7 +41,7 @@ class simplificationDataset(Dataset):
                     f"list index out of range{' due to curriculum learning' if len(self.dataset) > idx >= len(self) else ''}")
             if self.curriculumLearning.value:
                 (xIndex, yIndex) = self.curriculumLearningIndices[idx]
-                return (self.dataset[xIndex], yIndex)
+                return self.dataset[xIndex].getView(yIndex)
             return self.dataset[idx]
         elif isinstance(idx, tuple):
             raise TypeError('list indices must be integers or slices, not tuple')

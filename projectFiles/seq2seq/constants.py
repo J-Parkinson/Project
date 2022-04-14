@@ -17,12 +17,11 @@ with open(f"{fileLoc}/preprocessing/datasetToIndex/indices.txt", "r", encoding="
     indicesRaw = indicesRaw.splitlines()
     indices = {word: i + 2 for i, word in enumerate(indicesRaw)}
 
-
 def getIndexRaw(index):
     if index >= 2:
         return indicesRaw[index - 2]
     else:
-        return [SOS, EOS][index]
+        return ["SOS", "EOS"][index]
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device:{device}")

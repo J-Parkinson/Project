@@ -10,7 +10,7 @@ from projectFiles.seq2seq.plots import showPlot
 
 class epochData:
     def __init__(self, encoder, decoder, data, embedding, datasetName="", locationToSaveTo="seq2seq/trainedModels/",
-                 learningRate=0.01, startIter=0, timer=Timer(), plot_losses=None, plot_dev_losses=None,
+                 learningRate=0.01, timer=Timer(), plot_losses=None, plot_dev_losses=None,
                  minLoss=999999999, minDevLoss=999999999, lastIterOfDevLossImp=0, optimalEncoder=None,
                  optimalDecoder=None, fileSaveDir=None, iGlobal=0, valCheckEvery=50, earlyStopAfterNoImpAfterIter=None):
         if plot_dev_losses is None:
@@ -22,14 +22,12 @@ class epochData:
         if not earlyStopAfterNoImpAfterIter:
             earlyStopAfterNoImpAfterIter = sizes[name2DTL(datasetName)][0] // 4
         os.mkdir(fileSaveDir)
-        notFirstYet = startIter == 0
         self.encoder = encoder
         self.decoder = decoder
         self.data = data
         self.datasetName = datasetName
         self.locationToSaveTo = locationToSaveTo
         self.learningRate = learningRate
-        self.startIter = startIter
         self.timer = timer
         self.plot_losses = plot_losses
         self.plot_dev_losses = plot_dev_losses
@@ -39,7 +37,6 @@ class epochData:
         self.optimalEncoder = optimalEncoder
         self.optimalDecoder = optimalDecoder
         self.fileSaveDir = fileSaveDir
-        self.notFirstYet = notFirstYet
         self.iGlobal = iGlobal
         self.valCheckEvery = valCheckEvery
         self.epochFinished = True

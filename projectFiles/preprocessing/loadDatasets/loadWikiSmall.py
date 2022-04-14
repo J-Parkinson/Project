@@ -9,6 +9,8 @@ def loadWikiSmall(loadPickleFile=True, pickleFile=False, isAnonymised=False):
     if loadPickleFile:
         return pickle.load(open(f"{baseLoc}/datasets/wikismall/pickled{'ori' if not isAnonymised else ''}.p", "rb"))
 
+    print("Creating WikiSmall")
+
     startLoc = baseLoc + f"/datasets/wikismall/PWKP_108016.tag.80.aner{'.ori' if not isAnonymised else ''}"
     dataset = datasetToLoad.wikismall
     with open(f'{startLoc}.train.src', 'r', encoding='utf-8') as trainOrig:

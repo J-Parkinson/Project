@@ -13,6 +13,7 @@ def loadWikiLarge(loadPickleFile=True, pickleFile=False, isAnonymised=False):
     if loadPickleFile:
         return pickle.load(open(f"{baseLoc}/datasets/wikilarge/pickled{'ori' if not isAnonymised else ''}.p", "rb"))
 
+    print("Creating WikiLarge")
     dataset = datasetToLoad.wikilarge
     with open(f'{startLoc}.train.src', 'r', encoding='utf-8') as trainOrig:
         trainOrig = trainOrig.read().splitlines()

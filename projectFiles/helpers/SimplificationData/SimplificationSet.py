@@ -1,6 +1,7 @@
 import torch
 
 from projectFiles.helpers.DatasetToLoad import datasetToLoad
+from projectFiles.helpers.SimplificationData.SimplificationSetView import simplificationSetView
 from projectFiles.seq2seq.constants import device
 
 
@@ -52,3 +53,19 @@ class simplificationSet():
                                  in self.allSimpleIndices]
 
         return (self.originalTorch, self.allSimpleTorches)
+
+    def getView(self, yIndex):
+        return simplificationSetView(self.original,
+                                     self.allSimple[yIndex],
+                                     self.originalTokenized,
+                                     self.allSimpleTokenized[yIndex],
+                                     self.dataset,
+                                     self.language,
+                                     self.predicted,
+                                     self.originalIndices,
+                                     None if not self.allSimpleIndices else self.allSimpleIndices[yIndex],
+                                     self.originalTorch,
+                                     None if not self.allSimpleIndices else self.allSimpleTorches[yIndex])
+
+    def getAllViews(self):
+        return [self.getView(yIndex) for yIndex in range(len(self.allSimple))]

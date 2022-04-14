@@ -4,12 +4,11 @@ import torch
 
 from projectFiles.seq2seq.constants import EOS, SOS, device, maxLengthSentence, indicesRaw
 # from projectFiles.seq2seq.deprecated.loadEncoderDecoder import loadEncoderDecoder, loadDataForEncoderDecoder
-from projectFiles.seq2seq.embeddingLayers import embeddingLayer
+from projectFiles.seq2seq.embeddingLayers import inputEmbeddingLayer
 
 
-def evaluate(encoder, decoder, input_tensor, embedding, max_length=maxLengthSentence):
+def evaluate(encoder, decoder, set, embedding, max_length=maxLengthSentence):
     with torch.no_grad():
-        input_length = input_tensor.size()[0]
         encoder_hidden = encoder.initHidden()
 
         encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
@@ -18,8 +17,10 @@ def evaluate(encoder, decoder, input_tensor, embedding, max_length=maxLengthSent
         # This is because for indices embeddings it needs to store learnt embeddings, whilst for Bert and Glove it uses
         # pretrained embeddings
         # However, BERT needs context for the entire sentence, hence this is done here outside the input loop.
-        input_tensor_embedding_func = embeddingLayer(embedding, encoder.input_size, encoder.hidden_size)
-        input_tensor_embedding = input_tensor_embedding_func(input_tensor)
+        input_tensor_embedding_func = inputEmbeddingLayer(embedding, encoder.input_size, encoder.hidden_size)
+        input_tensor_embedding = input_tensor_embedding_func(set)
+
+        input_length = input_tensor_embedding.size(0)
 
         for ei in range(input_length):
             encoder_output, encoder_hidden = encoder(input_tensor_embedding[ei],
@@ -61,7 +62,7 @@ def evaluateRandomly(encoder, decoder, dataset, embedding, n=5):
         print('>', " ".join(set.originalTokenized))
         for sentence in set.allSimpleTokenized:
             print('=', " ".join(sentence))
-        output_words, attentions = evaluate(encoder, decoder, set.originalTorch, embedding)
+        output_words, attentions = evaluate(encoder, decoder, set, embedding)
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
 
@@ -69,8 +70,7 @@ def evaluateRandomly(encoder, decoder, dataset, embedding, n=5):
 def evaluateAllEpoch(epochData):
     testData = epochData.data.test.dataset
     for set in testData:
-        output_words, attentions = evaluate(epochData.encoder, epochData.decoder, set.originalTorch,
-                                            epochData.embedding)
+        output_words, attentions = evaluate(epochData.encoder, epochData.decoder, set, epochData.embedding)
         output_sentence = ' '.join(output_words)
         set.addPredicted(output_sentence)
     return epochData
@@ -79,7 +79,7 @@ def evaluateAllEpoch(epochData):
 def evaluateAll(encoder, decoder, dataset, embedding):
     testData = dataset.test.dataset
     for set in testData:
-        output_words, attentions = evaluate(encoder, decoder, set.originalTorch, embedding)
+        output_words, attentions = evaluate(encoder, decoder, set, embedding)
         output_sentence = ' '.join(output_words)
         set.addPredicted(output_sentence)
     return testData

@@ -8,11 +8,28 @@ def loadGloveEmbeddings():
         gloveLines = glove.readlines()
 
     gloveSplit = [gloveLine.split(" ") for gloveLine in gloveLines]
-    gloveEmbeddings = {gloveLine[0]: gloveLine[1:] for gloveLine in gloveSplit}
+    gloveEmbeddings = {gloveLine[0]: [float(x) for x in gloveLine[1:]] for gloveLine in gloveSplit}
     return gloveEmbeddings
 
 
-gloveEmbeddings = loadGloveEmbeddings()
+def loadMyGloveEmbeddings():
+    with open(f"{baseLoc}/datasets/glove/ourEmbeddings.txt", "r", encoding="utf-8") as glove:
+        gloveLines = glove.readlines()
+
+    gloveSplit = [gloveLine.split(" ") for gloveLine in gloveLines]
+    gloveEmbeddings = {gloveLine[0]: [float(x) for x in gloveLine[1:]] for gloveLine in gloveSplit}
+    return gloveEmbeddings
+
+
+def loadExtendedGloveEmbeddings():
+    baseGloveEmbeddings = loadGloveEmbeddings()
+    myGloveEmbeddings = loadMyGloveEmbeddings()
+    extendedGloveEmbeddings = {**baseGloveEmbeddings, **myGloveEmbeddings}
+    return extendedGloveEmbeddings
+
+
+gloveEmbeddingsBase = loadGloveEmbeddings()
+gloveEmbeddings = loadExtendedGloveEmbeddings()
 sizeOfEmbeddings = 300
 
 
@@ -24,7 +41,8 @@ def getGloveEmbeddings(word):
     except:
         # Glove embedding does not exist -- we need to make one
         # Use a random embedding, and save it!
+        print("here")
         ourEmbedding = [str(random())[:8] for _ in range(300)]
-        with open(f"{baseLoc}/datasets/glove/ourEmbeddings.txt", "a") as ourEmbeddings:
+        with open(f"{baseLoc}/datasets/glove/ourEmbeddings.txt", "a+", encoding="utf-8") as ourEmbeddings:
             ourEmbeddings.write(f"{word.lower()} {' '.join(ourEmbedding)}\n")
-        return ourEmbedding
+        return [float(x) for x in ourEmbedding]

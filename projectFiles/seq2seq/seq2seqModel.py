@@ -9,7 +9,7 @@ from projectFiles.seq2seq.constants import device, maxLengthSentence
 # NEED TO DEAL WITH [EOS] IN ENCODER
 
 # https://pytorch.org/tutorials/intermediate/seq2seq_translation_tutorial.html
-# self.embedding = nn.Embedding(input_size, hidden_size)
+#self.embedding = nn.Embedding(input_size, hidden_size)
 class EncoderRNN(nn.Module):
     def __init__(self, input_size, hidden_size, embedding):
         # print(input_size)
