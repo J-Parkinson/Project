@@ -3,7 +3,7 @@ import os
 import torch
 
 noIndices = 253401
-maxLengthSentence = 383
+maxLengthSentence = 414
 SOS = 0
 EOS = 1
 teacher_forcing_ratio = 0.5

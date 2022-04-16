@@ -10,8 +10,8 @@ from easse.sari import get_corpus_sari_operation_scores
 
 
 def _sameSizeCreateSentenceLists(simplificationSets):
-    allOriginal = [set.originalTokenized for set in simplificationSets]
-    allSimplified = [set.allSimpleTokenized for set in simplificationSets]
+    allOriginal = [set.original for set in simplificationSets]
+    allSimplified = [set.allSimple for set in simplificationSets]
     allPredicted = [set.predicted for set in simplificationSets]
 
     originalSmeared = [[sentence for _ in range(len(simplified))] for sentence, simplified in
@@ -76,15 +76,57 @@ def calculateOtherMetrics(originalSentences, systemSentences):
     return corpus_quality_estimation(orig_sentences=originalSentences, sys_sentences=systemSentences)
 
 
+def computeValidation(allOriginal, allSimplifiedSets, allPredicted):
+    allResults = {}
+
+    allSimplified = [list(token) for token in zip(*allSimplifiedSets)]
+    allSimplifiedFlat = [z for y in allSimplifiedSets for z in y]
+
+    print("Computing FKCL")
+
+    # Flesch-Kincaid metrics
+    fkclOriginal = calculateFleschKincaid(allOriginal)
+    allResults["Flesch-Kincaid scores for original sentences"] = fkclOriginal
+    fkclSimplifiedExamples = calculateFleschKincaid(allSimplifiedFlat)
+    allResults["Flesch-Kincaid scores for simplified example sentences"] = fkclSimplifiedExamples
+    fkclPredictions = calculateFleschKincaid(allPredicted)
+    allResults["Flesch-Kincaid scores for predicted sentences"] = fkclPredictions
+
+    print("Computing BLEU")
+    # BLEU scores
+    bleuScoreOriginal = calculateBLEU(allOriginal, allSimplified)
+    allResults["BLEU score for original vs simplified sentences"] = bleuScoreOriginal
+    bleuScorePredicted = calculateBLEU(allPredicted, allSimplified)
+    allResults["BLEU score for predicted vs simplified sentences"] = bleuScorePredicted
+    bleuAverageOriginal = calculateAverageSentenceBLEU(allOriginal, allSimplified)
+    allResults["Average BLEU score for original vs simplified sentences"] = bleuAverageOriginal
+    bleuAveragePredicted = calculateAverageSentenceBLEU(allPredicted, allSimplified)
+    allResults["Average BLEU score for predicted vs simplified sentences"] = bleuAveragePredicted
+
+    print("Computing SARI")
+    # SARI scores
+    sariMacro, sariMacroAdd, sariMacroKeep, sariMacroDel = calculateSARI(allOriginal, allPredicted, allSimplified,
+                                                                         microSari=False)
+    allResults["SARI macro avg/add/keep/delete scores"] = (sariMacro, sariMacroAdd, sariMacroKeep, sariMacroDel)
+    sariMicro, sariMicroAdd, sariMicroKeep, sariMicroDel = calculateSARI(allOriginal, allPredicted, allSimplified,
+                                                                         microSari=True)
+    allResults["SARI micro avg/add/keep/delete scores"] = (sariMicro, sariMicroAdd, sariMicroKeep, sariMicroDel)
+
+    print("Computing BERTscore")
+    # BERTscore
+    bertScoreOriginal = calculateBERTScore(allOriginal, allSimplified)
+    allResults["BERTscore for original vs simplified sentences"] = bertScoreOriginal
+    bertScorePredictions = calculateBERTScore(allPredicted, allSimplified)
+    allResults["BERTscore for predicted vs simplified sentences"] = bertScorePredictions
+
+    return allResults
+
+
 def computeAll(simplificationSets, samsa=False):
     allResults = {}
 
-    for set in simplificationSets:
-        set.originalTokenized = " ".join(set.originalTokenized)
-        set.allSimpleTokenized = [" ".join(sentence) for sentence in set.allSimpleTokenized]
-
-    allOriginal = [set.originalTokenized for set in simplificationSets]
-    allSimplifiedOriginal = [set.allSimpleTokenized for set in simplificationSets]
+    allOriginal = [set.original for set in simplificationSets]
+    allSimplifiedOriginal = [set.allSimple for set in simplificationSets]
     allSimplified = [list(token) for token in zip(*allSimplifiedOriginal)]
     allPredicted = [set.predicted for set in simplificationSets]
     sameSizeSimplified, sameSizeOriginal, sameSizePredicted = _sameSizeCreateSentenceLists(simplificationSets)

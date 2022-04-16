@@ -43,6 +43,7 @@ class epochData:
         self.earlyStopAfterNoImpAfterIter = earlyStopAfterNoImpAfterIter
         self.epochNo = 1
         self.embedding = embedding
+        self.results = []
 
     def nextEpoch(self):
         self.epochNo += 1
@@ -59,6 +60,14 @@ class epochData:
                  f"Development set losses for {self.datasetName} {'using' if self.data.train.curriculumLearning.value else 'without'} curriculum learning",
                  self.fileSaveDir)
 
+        if len(self.results) > 0:
+            metrics = list(self.results[0].keys())
+            metrics.remove("i")
+            for metric in metrics:
+                xPos = [x["i"] for x in self.results]
+                yPos = [x[metric] for x in self.results]
+                showPlot(*list(zip(xPos, yPos)), metric, self.fileSaveDir)
+
     def savePlotData(self):
         with open(f"{self.fileSaveDir}/plotData.txt", "w+") as file:
             for x, y in self.plot_losses:
@@ -67,6 +76,16 @@ class epochData:
         with open(f"{self.fileSaveDir}/plotDataDev.txt", "w+") as fileDev:
             for x, y in self.plot_dev_losses:
                 fileDev.write(f"{x} {y}\n")
+
+        if len(self.results) > 0:
+            metrics = list(self.results[0].keys())
+            metrics.remove("i")
+            for metric in metrics:
+                xPos = [x["i"] for x in self.results]
+                yPos = [x[metric] for x in self.results]
+                with open(f"{self.fileSaveDir}/{metric}.txt", "w+") as fileDev:
+                    for x, y in zip(xPos, yPos):
+                        fileDev.write(f"{x} {y}\n")
 
     def saveTestData(self):
         with open(f"{self.fileSaveDir}/originalSentences.txt", "w+") as file:

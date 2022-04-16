@@ -5,6 +5,7 @@ class curriculumLearningFlag(Enum):
     off = 0
     basic = 1
     full = 2
+    epoch = 3
 
 
 class curriculumLearningMetadata():

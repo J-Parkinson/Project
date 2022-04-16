@@ -7,7 +7,7 @@ from projectFiles.seq2seq.seq2seqModel import EncoderRNN, AttnDecoderRNN
 from projectFiles.seq2seq.training import trainMultipleIterations
 
 
-def runSeq2Seq(dataset, embedding, hiddenLayerWidthForIndices=256, maxIndices=253401, curriculumLearningMD=None):
+def runSeq2Seq(dataset, embedding, hiddenLayerWidthForIndices=512, maxIndices=253401, curriculumLearningMD=None):
     hiddenLayerWidth = getHiddenSize(hiddenLayerWidthForIndices, embedding)
     datasetLoaded = simplificationDataToPyTorch(dataset, embedding)
     print("Dataset loaded")

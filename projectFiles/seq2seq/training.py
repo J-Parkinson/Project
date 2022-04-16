@@ -3,9 +3,10 @@ from random import random
 import torch
 from torch import optim, nn
 
+from projectFiles.evaluation.easse.calculateEASSE import computeValidation
 from projectFiles.helpers.epochData import epochData
 from projectFiles.helpers.epochTiming import Timer
-from projectFiles.seq2seq.constants import device, SOS, teacher_forcing_ratio, EOS, maxLengthSentence
+from projectFiles.seq2seq.constants import device, SOS, teacher_forcing_ratio, EOS, maxLengthSentence, indicesRaw
 from projectFiles.seq2seq.embeddingLayers import inputEmbeddingLayer
 
 
@@ -71,15 +72,24 @@ def train(view, encoder, decoder, encoder_optimizer, decoder_optimizer, criterio
     return loss.item() / target_length
 
 
-def validationLoss(viewsSet, encoder, decoder, criterion, embedding,
+def validationLoss(epochData, viewsSet, encoder, decoder, criterion, embedding,
                    max_length=maxLengthSentence):
     losses = []
     with torch.no_grad():
+        allOriginal = []
+        allSimplifiedSets = []
+        allPredicted = []
         for views in viewsSet:
+            # Same original sentence, different simplified, same prediction, different losses
+            allSimplified = []
+
             for view in views:
                 encoder_hidden = encoder.initHidden()
 
                 target_tensor = view.simpleTorch
+                originalSentence = view.originalTokenized
+                simplifiedSentence = view.simpleTokenized
+                allSimplified.append(simplifiedSentence)
 
                 encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
 
@@ -104,18 +114,34 @@ def validationLoss(viewsSet, encoder, decoder, criterion, embedding,
 
                 decoder_hidden = encoder_hidden
 
+                prediction = []
+
                 # We do not use teacher forcing during evaluation
                 for di in range(target_length):
                     decoder_output, decoder_hidden, decoder_attention = decoder(
                         decoder_input, decoder_hidden, encoder_outputs)
                     topv, topi = decoder_output.topk(1)
+
                     decoder_input = topi.squeeze().detach()  # detach from history as input
 
                     loss += criterion(decoder_output, target_tensor[di])
                     if decoder_input.item() == EOS:
+                        prediction.append('<EOS>')
                         break
+                    else:
+                        prediction.append(indicesRaw[topi.item()])
                 losses.append(loss.item() / target_length)
-    return sum(losses) / len(losses)
+            allOriginal.append(originalSentence)
+            allPredicted.append(prediction)
+            allSimplifiedSets.append(allSimplified)
+
+    results = computeValidation(allOriginal, allSimplifiedSets, allPredicted)
+
+    results["i"] = epochData.iGlobal
+
+    epochData.results.append(results)
+
+    return sum(losses) / len(losses), epochData
 
 
 def trainMultipleIterations(trainingMetadata=None, encoder=None, decoder=None, allData=None, datasetName=None,
@@ -185,9 +211,10 @@ def trainOneIteration(trainingMetadata):
                 trainingMetadata.minLoss = min(trainingMetadata.minLoss, print_loss_total)
 
                 # Calculate validation loss
-                devLoss = validationLoss(validationViewsSet,
-                                         trainingMetadata.encoder, trainingMetadata.decoder, criterion,
-                                         trainingMetadata.embedding)
+                devLoss, trainingMetadata = validationLoss(trainingMetadata, validationViewsSet,
+                                                           trainingMetadata.encoder, trainingMetadata.decoder,
+                                                           criterion,
+                                                           trainingMetadata.embedding)
                 trainingMetadata.minDevLoss = min(trainingMetadata.minDevLoss, devLoss)
 
                 if trainingMetadata.minDevLoss == devLoss:

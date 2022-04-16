@@ -1,4 +1,4 @@
-from random import shuffle
+from random import shuffle, random
 
 from torch.utils.data import Dataset
 
@@ -15,6 +15,22 @@ class simplificationDataset(Dataset):
         self.curriculumLearningPercentageAddedPerEpoch = 0
         self.curriculumLearningPercentage = 0
         self.lambdaFunc = None
+        self.epochNo = 1
+
+    def _distributionForCurriculumLearningEpoch(self):
+        location = random()
+        # If initial epoch or entire dataset ran through
+        if self.epochNo == 1 or (self.epochNo * self.curriculumLearningPercentageAddedPerEpoch) > 100:
+            return int(location * len(self.curriculumLearningIndices))
+        else:
+            threshold = int(len(self.curriculumLearningIndices) * (
+                        self.curriculumLearningPercentage - self.curriculumLearningPercentageAddedPerEpoch) // self.curriculumLearningPercentage)
+            if location < 0.5:
+                return int(location * 2 * threshold)
+            else:
+                maxValue = len(self.curriculumLearningIndices)
+                factor = maxValue - threshold
+                return int(threshold + factor * ((location - 0.5) * 2))
 
     def initialiseCurriculumLearning(self, flag, lambdaFunc, addEpoch=10):
         self.curriculumLearning = flag
@@ -24,6 +40,7 @@ class simplificationDataset(Dataset):
         self._curriculumLearningSortDataset(self.lambdaFunc)
 
     def increasePercentage(self):
+        self.epochNo += 1
         self.curriculumLearningPercentage = min(100,
                                                 self.curriculumLearningPercentageAddedPerEpoch + self.curriculumLearningPercentage)
 
@@ -39,7 +56,10 @@ class simplificationDataset(Dataset):
             if idx >= self.__len__():
                 raise IndexError(
                     f"list index out of range{' due to curriculum learning' if len(self.dataset) > idx >= len(self) else ''}")
-            if self.curriculumLearning.value:
+            if self.curriculumLearning == curriculumLearningFlag.epoch:
+                (xIndex, yIndex) = self.curriculumLearningIndices[self._distributionForCurriculumLearningEpoch()]
+                return self.dataset[xIndex].getView(yIndex)
+            elif self.curriculumLearning.value:
                 (xIndex, yIndex) = self.curriculumLearningIndices[idx]
                 return self.dataset[xIndex].getView(yIndex)
             return self.dataset[idx]

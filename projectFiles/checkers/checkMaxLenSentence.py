@@ -1,15 +1,18 @@
-from projectFiles.preprocessing.loadDatasets.loadAsset import loadAsset
-from projectFiles.preprocessing.loadDatasets.loadNewsala import loadNewsala
-from projectFiles.preprocessing.loadDatasets.loadWikiLarge import loadWikiLarge
-from projectFiles.preprocessing.loadDatasets.loadWikiSmall import loadWikiSmall
+from collections import Counter
 
-asset = loadAsset()
+from matplotlib import pyplot as plt
+
+from projectFiles.helpers.DatasetToLoad import datasetToLoad
+from projectFiles.helpers.embeddingType import embeddingType
+from projectFiles.preprocessing.convertToPyTorch.simplificationDataToPyTorch import simplificationDataToPyTorch
+
+asset = simplificationDataToPyTorch(datasetToLoad.asset, embeddingType.bert)
 print("asset")
-newsala = loadNewsala()
+newsala = simplificationDataToPyTorch(datasetToLoad.newsala, embeddingType.bert)
 print("newsala")
-wikismall = loadWikiSmall()
+wikismall = simplificationDataToPyTorch(datasetToLoad.wikismall, embeddingType.bert)
 print("wikismall")
-wikilarge = loadWikiLarge()
+wikilarge = simplificationDataToPyTorch(datasetToLoad.wikilarge, embeddingType.bert)
 print("wikilarge")
 
 datasets = [asset.train, asset.dev, asset.test,
@@ -17,5 +20,22 @@ datasets = [asset.train, asset.dev, asset.test,
             wikismall.train, wikismall.dev, wikismall.test,
             wikilarge.train, wikilarge.dev, wikilarge.test]
 
-print("Max len sentence:",
-      max([max([len(sentence.originalTokenized) for sentence in dataset]) for dataset in datasets]))
+maxSentence = 0
+allLensOrig = Counter()
+allLensSimp = Counter()
+for dataset in datasets:
+    viewsSet = [setV.getAllViews() for setV in dataset]
+    views = [view for views in viewsSet for view in views]
+    allOrig = [len(view.originalIndices) for view in views]
+    allLensOrig.update(allOrig)
+    maxOrig = max(allOrig)
+    allSimp = [len(view.simpleIndices) for view in views]
+    allLensSimp.update(allSimp)
+    maxSimp = max(allSimp)
+    maxSentence = max([maxOrig, maxSimp, maxSentence])
+
+print(f"Max sentence: {maxSentence}")
+plt.title("Lengths of sentences across all datasets including both original and simplified")
+allLens = allLensOrig + allLensSimp
+plt.plot(allLens.items())
+plt.show()
