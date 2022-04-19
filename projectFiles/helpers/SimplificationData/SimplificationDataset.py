@@ -17,18 +17,26 @@ class simplificationDataset(Dataset):
         self.lambdaFunc = None
         self.epochNo = 1
 
+    def _distributionForCurriculumLearningEpochFlat(self):
+        location = random()
+        # If initial epoch or entire dataset ran through
+        if self.epochNo == 1 or (self.epochNo * self.curriculumLearningPercentageAddedPerEpoch) > 100:
+            return int(location * len(self.curriculumLearningIndices))
+        else:
+            return int(location * len(self))
+
     def _distributionForCurriculumLearningEpoch(self):
         location = random()
         # If initial epoch or entire dataset ran through
         if self.epochNo == 1 or (self.epochNo * self.curriculumLearningPercentageAddedPerEpoch) > 100:
             return int(location * len(self.curriculumLearningIndices))
         else:
-            threshold = int(len(self.curriculumLearningIndices) * (
-                        self.curriculumLearningPercentage - self.curriculumLearningPercentageAddedPerEpoch) // self.curriculumLearningPercentage)
+            threshold = int(len(self) * (
+                    self.curriculumLearningPercentage - self.curriculumLearningPercentageAddedPerEpoch) // self.curriculumLearningPercentage)
             if location < 0.5:
                 return int(location * 2 * threshold)
             else:
-                maxValue = len(self.curriculumLearningIndices)
+                maxValue = len(self)
                 factor = maxValue - threshold
                 return int(threshold + factor * ((location - 0.5) * 2))
 
@@ -58,6 +66,9 @@ class simplificationDataset(Dataset):
                     f"list index out of range{' due to curriculum learning' if len(self.dataset) > idx >= len(self) else ''}")
             if self.curriculumLearning == curriculumLearningFlag.epoch:
                 (xIndex, yIndex) = self.curriculumLearningIndices[self._distributionForCurriculumLearningEpoch()]
+                return self.dataset[xIndex].getView(yIndex)
+            elif self.curriculumLearning == curriculumLearningFlag.epochFlat:
+                (xIndex, yIndex) = self.curriculumLearningIndices[self._distributionForCurriculumLearningEpochFlat()]
                 return self.dataset[xIndex].getView(yIndex)
             elif self.curriculumLearning.value:
                 (xIndex, yIndex) = self.curriculumLearningIndices[idx]
