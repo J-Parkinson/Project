@@ -6,19 +6,15 @@ from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from projectFiles.helpers.embeddingType import embeddingType
 from projectFiles.preprocessing.convertToPyTorch.simplificationDataToPyTorch import simplificationDataToPyTorch
 
-asset = simplificationDataToPyTorch(datasetToLoad.asset, embeddingType.bert)
-print("asset")
-newsala = simplificationDataToPyTorch(datasetToLoad.newsala, embeddingType.bert)
-print("newsala")
-wikismall = simplificationDataToPyTorch(datasetToLoad.wikismall, embeddingType.bert)
-print("wikismall")
-wikilarge = simplificationDataToPyTorch(datasetToLoad.wikilarge, embeddingType.bert)
-print("wikilarge")
+newsela = simplificationDataToPyTorch(datasetToLoad.newsela, embeddingType.indices)
+print("newsela")
 
-datasets = [asset.train, asset.dev, asset.test,
-            newsala.train, newsala.dev, newsala.test,
-            wikismall.train, wikismall.dev, wikismall.test,
-            wikilarge.train, wikilarge.dev, wikilarge.test]
+datasets = [newsela.train, newsela.dev, newsela.test]
+
+
+def safeCheck(x, y):
+    return x[y] if x[y] else 0
+
 
 maxSentence = 0
 allLensOrig = Counter()
@@ -37,5 +33,9 @@ for dataset in datasets:
 print(f"Max sentence: {maxSentence}")
 plt.title("Lengths of sentences across all datasets including both original and simplified")
 allLens = allLensOrig + allLensSimp
-plt.plot(allLens.items())
+print(sum(allLensSimp.values()))
+allLensSorted = list(allLens.items())
+allLensSorted.sort(key=lambda x: x[0])
+allLensX, allLensY = [list(i) for i in zip(*allLensSorted)]
+plt.plot(allLensX, allLensY)
 plt.show()

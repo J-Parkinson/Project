@@ -9,18 +9,18 @@ from projectFiles.helpers.SimplificationData.SimplificationDatasets import simpl
 from projectFiles.helpers.SimplificationData.SimplificationSet import simplificationSet
 
 
-def loadNewsala(loadPickleFile=True, pickleFile=False, restrictLanguage="en", fullSimplifyOnly=False):
-    print("Loading Newsala.")
+def loadNewsela(loadPickleFile=True, pickleFile=False, restrictLanguage="en", fullSimplifyOnly=False):
+    print("Loading Newsela.")
 
     if loadPickleFile:
         print("Loading from file.")
-        return pickle.load(open(f"{baseLoc}/datasets/newsala/pickled.p", "rb"))
-    dataset = datasetToLoad.newsala
+        return pickle.load(open(f"{baseLoc}/datasets/newsela/pickled.p", "rb"))
+    dataset = datasetToLoad.newsela
 
     # Find names of every article in dataset
-    allFilenames = tuple(walk(f"{baseLoc}/datasets/newsala"))[0][2]
+    allFilenames = tuple(walk(f"{baseLoc}/datasets/newsela"))[0][2]
 
-    #Larger numbers are more simplified
+    # Larger numbers are more simplified
     uniqueFilenamesAndLangs = list(set([".".join(filename.split(".", 2)[:2]) for filename in allFilenames]))
     uniqueFilenames = [filename.split(".")[0] for filename in uniqueFilenamesAndLangs]
     uniqueLangs = [filename.split(".")[1] for filename in uniqueFilenamesAndLangs]
@@ -38,10 +38,10 @@ def loadNewsala(loadPickleFile=True, pickleFile=False, restrictLanguage="en", fu
         if restrictLanguage and lang != restrictLanguage:
             continue
 
-        allSimplificationsFiles = [open(f"{baseLoc}/datasets/newsala/{filename}.{lang}.{i}.txt", "r", encoding="utf-8")
+        allSimplificationsFiles = [open(f"{baseLoc}/datasets/newsela/{filename}.{lang}.{i}.txt", "r", encoding="utf-8")
                                    for i in range(5)]
         try:
-            allSimplificationsFiles.append(open(f"{baseLoc}/datasets/newsala/{filename}.{lang}.5.txt"))
+            allSimplificationsFiles.append(open(f"{baseLoc}/datasets/newsela/{filename}.{lang}.5.txt"))
         except:
             pass
 
@@ -77,8 +77,8 @@ def loadNewsala(loadPickleFile=True, pickleFile=False, restrictLanguage="en", fu
 
     if pickleFile:
         print("Saving file.")
-        pickle.dump(dataset, open(f"{baseLoc}/datasets/newsala/pickled.p", "wb"))
+        pickle.dump(dataset, open(f"{baseLoc}/datasets/newsela/pickled.p", "wb"))
         print("File saved.")
     return dataset
 
-#loadNewsala(loadPickleFile=False, pickleFile=True)
+#loadNewsela(loadPickleFile=False, pickleFile=True)

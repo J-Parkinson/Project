@@ -1,7 +1,7 @@
 from collections import Counter
 
 from projectFiles.preprocessing.loadDatasets.loadAsset import loadAsset
-from projectFiles.preprocessing.loadDatasets.loadNewsala import loadNewsala
+from projectFiles.preprocessing.loadDatasets.loadNewsela import loadNewsela
 from projectFiles.preprocessing.loadDatasets.loadWikiLarge import loadWikiLarge
 from projectFiles.preprocessing.loadDatasets.loadWikiSmall import loadWikiSmall
 
@@ -21,8 +21,8 @@ def processDataset(dataset):
 
 asset = loadAsset()
 print("asset")
-newsala = loadNewsala()
-print("newsala")
+newsela = loadNewsela()
+print("newsela")
 wikismall = loadWikiSmall()
 print("wikismall")
 wikilarge = loadWikiLarge()
@@ -31,7 +31,7 @@ print("wikilarge")
 counter = Counter()
 
 for dataset in [asset.train, asset.dev, asset.test,
-                newsala.train, newsala.dev, newsala.test,
+                newsela.train, newsela.dev, newsela.test,
                 wikismall.train, wikismall.dev, wikismall.test,
                 wikilarge.train, wikilarge.dev, wikilarge.test]:
     counterToAdd = processDataset(dataset)
