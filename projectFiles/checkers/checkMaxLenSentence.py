@@ -6,6 +6,9 @@ from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from projectFiles.helpers.embeddingType import embeddingType
 from projectFiles.preprocessing.convertToPyTorch.simplificationDataToPyTorch import simplificationDataToPyTorch
 
+# Calculates the lengths of sentences in each dataset and plots a graph of this (perhaps for writeup if needed)
+
+
 newsela = simplificationDataToPyTorch(datasetToLoad.newsela, embeddingType.indices)
 print("newsela")
 
