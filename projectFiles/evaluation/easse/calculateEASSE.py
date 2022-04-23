@@ -6,9 +6,9 @@ from easse.quality_estimation import corpus_quality_estimation
 from easse.samsa import corpus_samsa
 from easse.sari import get_corpus_sari_operation_scores
 
-# from easse.report import write_html_report
+# Wrapper functions which handle evaluation using EASSE (and abstracts away complex optional parameters)
 
-
+# This duplicates original and predicted sentences to pair up with simplified sentences
 def _sameSizeCreateSentenceLists(simplificationSets):
     allOriginal = [set.original for set in simplificationSets]
     allSimplified = [set.allSimple for set in simplificationSets]
@@ -76,6 +76,7 @@ def calculateOtherMetrics(originalSentences, systemSentences):
     return corpus_quality_estimation(orig_sentences=originalSentences, sys_sentences=systemSentences)
 
 
+#Calculates metrics for the validation set, stored in epochData
 def computeValidation(allOriginal, allSimplifiedSets, allPredicted):
     allResults = {}
 
@@ -122,6 +123,7 @@ def computeValidation(allOriginal, allSimplifiedSets, allPredicted):
     return allResults
 
 
+#Evaluation function for test set
 def computeAll(simplificationSets, samsa=False):
     allResults = {}
 

@@ -1,3 +1,5 @@
+# This takes saved (pickled) class structure and converts to either BERT or NLTK tokenisation
+
 def convertSetForEmbedding(set, embedding):
     # Import deferral done to fix circular import issues
     from projectFiles.helpers.SimplificationData.SimplificationSetBERT import simplificationSetBERT

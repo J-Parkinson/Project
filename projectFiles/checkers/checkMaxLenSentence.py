@@ -8,9 +8,14 @@ from projectFiles.preprocessing.convertToPyTorch.simplificationDataToPyTorch imp
 
 # Calculates the lengths of sentences in each dataset and plots a graph of this (perhaps for writeup if needed)
 
-
-newsela = simplificationDataToPyTorch(datasetToLoad.newsela, embeddingType.indices)
+newsela = simplificationDataToPyTorch(datasetToLoad.newsela, embeddingType.bert)
 print("newsela")
+wikismall = simplificationDataToPyTorch(datasetToLoad.wikismall, embeddingType.bert)
+print("wikismall")
+wikilarge = simplificationDataToPyTorch(datasetToLoad.wikilarge, embeddingType.bert)
+print("wikilarge")
+asset = simplificationDataToPyTorch(datasetToLoad.asset, embeddingType.bert)
+print("asset")
 
 datasets = [newsela.train, newsela.dev, newsela.test]
 

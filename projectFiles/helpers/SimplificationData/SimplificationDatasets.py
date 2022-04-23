@@ -1,13 +1,15 @@
 from projectFiles.helpers.SimplificationData.setToBERTNLTK import convertSetForEmbedding
 
 
+# Stores training, dev and test set splits
 class simplificationDatasets():
-    def __init__(self, dataset, train, dev, test):
+    def __init__(self, dataset, train, dev, test, batch_size=128):
         self.dataset = dataset
         self.train = train
         self.dev = dev
         self.test = test
 
+    #Loads existing dataset and applies embedding type to each (i.e. tokenizing and creating Torch objects from each)
     def loadFromPickle(self, embedding):
         totalLen = len(self.train) + len(self.dev) + len(self.test)
         nPercent = [totalLen * n // 100 for n in range(100)]

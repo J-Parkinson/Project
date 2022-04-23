@@ -1,5 +1,4 @@
 from projectFiles.helpers.DatasetToLoad import dsName
-from projectFiles.helpers.SimplificationData.SimplificationDatasetLoaders import simplificationDatasetLoader
 from projectFiles.helpers.getHiddenSize import getHiddenSize
 from projectFiles.preprocessing.convertToPyTorch.simplificationDataToPyTorch import simplificationDataToPyTorch
 from projectFiles.seq2seq.constants import device
@@ -14,10 +13,6 @@ def runSeq2Seq(dataset, embedding, hiddenLayerWidthForIndices=512, maxIndices=25
     print("Dataset loaded")
     if curriculumLearningMD:
         datasetLoaded = initialiseCurriculumLearning(datasetLoaded, curriculumLearningMD)
-
-    # batching
-    datasetBatches = simplificationDatasetLoader(datasetLoaded)
-
     # 0=SOS, 1=EOS, 2=0', etc.
     print("Creating encoder and decoder")
     encoder = EncoderRNN(maxIndices, hiddenLayerWidth, embedding).to(device)
