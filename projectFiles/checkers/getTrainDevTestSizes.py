@@ -34,5 +34,4 @@ def calculateTrainDevTestSizes():
     wikilarge = simplificationDataToPyTorch(datasetToLoad.wikilarge)
     calculateTrainDevTestSizesForDataset(wikilarge, "wikiLarge")
 
-
-calculateTrainDevTestSizes()
+# calculateTrainDevTestSizes()

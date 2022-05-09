@@ -2,7 +2,7 @@ import torch
 
 from projectFiles.helpers.embeddingType import embeddingType
 from projectFiles.preprocessing.bertEmbeddings.loadBertEmbeddingsModel import model as BERTmodel
-from projectFiles.preprocessing.gloveEmbeddings.loadGloveEmbeddings import getGloveEmbeddings
+from projectFiles.preprocessing.gloveEmbeddings.loadGloveEmbeddings import gloveEmbeddings
 from projectFiles.seq2seq.constants import device, bertWidth
 
 
@@ -20,7 +20,7 @@ def inputEmbeddingLayer(embedding, inputSize, hiddenSize):
 
 def embeddingGlove(view):
     originalTokenizedEOS = view.originalTokenized + ["[EOS]"]
-    embeddings = torch.tensor([getGloveEmbeddings(word) for word in originalTokenizedEOS], dtype=torch.float32,
+    embeddings = torch.tensor(gloveEmbeddings(originalTokenizedEOS), dtype=torch.float32,
                               device=device)
     return embeddings
 

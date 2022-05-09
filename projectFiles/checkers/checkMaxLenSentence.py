@@ -8,16 +8,16 @@ from projectFiles.preprocessing.convertToPyTorch.simplificationDataToPyTorch imp
 
 # Calculates the lengths of sentences in each dataset and plots a graph of this (perhaps for writeup if needed)
 
-newsela = simplificationDataToPyTorch(datasetToLoad.newsela, embeddingType.bert)
-print("newsela")
-wikismall = simplificationDataToPyTorch(datasetToLoad.wikismall, embeddingType.bert)
-print("wikismall")
-wikilarge = simplificationDataToPyTorch(datasetToLoad.wikilarge, embeddingType.bert)
-print("wikilarge")
+# newsela = simplificationDataToPyTorch(datasetToLoad.newsela, embeddingType.bert)
+# print("newsela")
+# wikismall = simplificationDataToPyTorch(datasetToLoad.wikismall, embeddingType.bert)
+# print("wikismall")
+# wikilarge = simplificationDataToPyTorch(datasetToLoad.wikilarge, embeddingType.bert)
+# print("wikilarge")
 asset = simplificationDataToPyTorch(datasetToLoad.asset, embeddingType.bert)
 print("asset")
 
-datasets = [newsela.train, newsela.dev, newsela.test]
+datasets = [asset.train, asset.dev, asset.test]
 
 
 def safeCheck(x, y):
@@ -45,5 +45,6 @@ print(sum(allLensSimp.values()))
 allLensSorted = list(allLens.items())
 allLensSorted.sort(key=lambda x: x[0])
 allLensX, allLensY = [list(i) for i in zip(*allLensSorted)]
+print(allLensSorted)
 plt.plot(allLensX, allLensY)
 plt.show()

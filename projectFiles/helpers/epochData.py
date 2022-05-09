@@ -5,23 +5,29 @@ from projectFiles.constants import projectLoc
 from projectFiles.evaluation.easse.calculateEASSE import computeAll
 from projectFiles.helpers.DatasetToLoad import name2DTL
 from projectFiles.helpers.epochTiming import Timer
+from projectFiles.preprocessing.gloveEmbeddings.gloveNetwork import GloveEmbeddings
+from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList
+from projectFiles.seq2seq.constants import maxLengthSentence
 from projectFiles.seq2seq.plots import showPlot
 
 
 class epochData:
-    def __init__(self, encoder, decoder, data, embedding, datasetName="", locationToSaveTo="seq2seq/trainedModels/",
-                 learningRate=0.01, timer=Timer(), plot_losses=None, plot_dev_losses=None,
-                 minLoss=999999999, minDevLoss=999999999, lastIterOfDevLossImp=0, optimalEncoder=None,
-                 optimalDecoder=None, fileSaveDir=None, iGlobal=0, valCheckEvery=50, earlyStopAfterNoImpAfterIter=None):
+    def __init__(self, encoder, decoder, data, embedding, curriculumLearning, hiddenLayerWidth, datasetName="",
+                 batchSize=128, earlyStopping=False, maxLenSentence=maxLengthSentence,
+                 noTokens=len(indicesReverseList), locationToSaveTo="seq2seq/trainedModels/", learningRate=0.01,
+                 timer=Timer(), plot_losses=None, plot_dev_losses=None, minLoss=999999999, minDevLoss=999999999,
+                 lastIterOfDevLossImp=0, optimalEncoder=None, optimalDecoder=None, fileSaveDir=None, iGlobal=0,
+                 valCheckEvery=50, earlyStopAfterNoImpAfterIter=None, clipGrad=50):
         if plot_dev_losses is None:
             plot_dev_losses = []
         if plot_losses is None:
             plot_losses = []
         if not fileSaveDir:
-            fileSaveDir = f"{projectLoc}/{locationToSaveTo}{datasetName}_CL-{data.train.curriculumLearning.name}_{embedding.name}_{timer.getStartTime().replace(':', '')}"
+            fileSaveDir = f"{projectLoc}/{locationToSaveTo}{datasetName}_CL-{curriculumLearning.name}_{embedding.name}_{timer.getStartTime().replace(':', '')}"
         if not earlyStopAfterNoImpAfterIter:
-            earlyStopAfterNoImpAfterIter = sizes[name2DTL(datasetName)][0] // 4
+            earlyStopAfterNoImpAfterIter = sizes[name2DTL(datasetName)][0] // 3 // batchSize
         os.mkdir(fileSaveDir)
+        self.curriculumLearning = curriculumLearning
         self.encoder = encoder
         self.decoder = decoder
         self.data = data
@@ -37,27 +43,35 @@ class epochData:
         self.optimalEncoder = optimalEncoder
         self.optimalDecoder = optimalDecoder
         self.fileSaveDir = fileSaveDir
-        self.iGlobal = iGlobal
+        self.batchNoGlobal = iGlobal
         self.valCheckEvery = valCheckEvery
         self.epochFinished = True
         self.earlyStopAfterNoImpAfterIter = earlyStopAfterNoImpAfterIter
         self.epochNo = 1
         self.embedding = embedding
         self.results = []
+        self.batchSize = batchSize
+        self.earlyStopping = earlyStopping
+        self.maxLenSentence = maxLenSentence
+        self.hiddenLayerWidth = hiddenLayerWidth
+        self.noTokens = noTokens
+        self.gloveEmbeddingModel = GloveEmbeddings(self.noTokens, self.hiddenLayerWidth)
+        self.clipGrad = clipGrad
 
     def nextEpoch(self):
         self.epochNo += 1
 
     def checkIfEpochShouldEnd(self):
-        return (self.iGlobal - self.lastIterOfDevLossImp) > self.earlyStopAfterNoImpAfterIter
+        return (self.batchNoGlobal - self.lastIterOfDevLossImp) > self.earlyStopAfterNoImpAfterIter \
+               and self.earlyStopping
 
     def printPlots(self):
         print("Making plots")
         showPlot(*list(zip(*self.plot_losses)),
-                 f"Training set losses for {self.datasetName} {'using' if self.data.train.curriculumLearning.value else 'without'} curriculum learning",
+                 f"Training set losses for {self.datasetName} {'using' if self.curriculumLearning.value else 'without'} curriculum learning",
                  self.fileSaveDir)
         showPlot(*list(zip(*self.plot_dev_losses)),
-                 f"Development set losses for {self.datasetName} {'using' if self.data.train.curriculumLearning.value else 'without'} curriculum learning",
+                 f"Development set losses for {self.datasetName} {'using' if self.curriculumLearning.value else 'without'} curriculum learning",
                  self.fileSaveDir)
 
         if len(self.results) > 0:
@@ -105,11 +119,12 @@ class epochData:
     def getAttributeStr(self, iLocal):
         return f"Epoch: {self.epochNo}\n" \
                f"Sentence no / iteration in epoch: {iLocal}\n" \
-               f"Global sentence no / iteration: {self.iGlobal}\n" \
+               f"Global sentence no / iteration: {self.batchNoGlobal}\n" \
                f"Dataset name: {self.datasetName}\n" \
-               f"Curriculum learning: {self.data.train.curriculumLearning.name}\n" \
+               f"Curriculum learning: {self.curriculumLearning.name}\n" \
                f"Learning rate: {self.learningRate}\n" \
                f"Time ran: {self.timer.checkTimeDiff()}\n" \
+               f"Batch size: {self.batchSize}\n" \
                f"Min loss: {self.minLoss}\n" \
                f"Min dev loss: {self.minDevLoss}\n" \
                f"Check dev loss every {self.valCheckEvery} sentences\n" \

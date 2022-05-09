@@ -1,4 +1,3 @@
-from projectFiles.curriculumLearningFunctions.length import noTokensInInput
 from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from projectFiles.helpers.curriculumLearningFlag import curriculumLearningFlag, curriculumLearningMetadata
 from projectFiles.helpers.embeddingType import embeddingType
@@ -6,8 +5,8 @@ from projectFiles.seq2seq.evaluate import evaluateAllEpoch
 from projectFiles.seq2seq.runSeq2Seq import runSeq2Seq
 
 
-def runE2E(dataset, embedding, curriculumLearningMD=None):
-    epochData = runSeq2Seq(dataset, embedding, curriculumLearningMD=curriculumLearningMD)
+def runE2E(dataset, embedding, curriculumLearningMD):
+    epochData = runSeq2Seq(dataset, embedding, curriculumLearningMD)
     epochData.printPlots()
     epochData.savePlotData()
     epochData = evaluateAllEpoch(epochData)
@@ -20,6 +19,9 @@ def runE2E(dataset, embedding, curriculumLearningMD=None):
     # 4. Save encoder/decoder
 
 
-runE2E(datasetToLoad.asset, embeddingType.bert)
-runE2E(datasetToLoad.asset, embeddingType.bert,
-       curriculumLearningMD=curriculumLearningMetadata(curriculumLearningFlag.full, noTokensInInput))
+# runE2E(datasetToLoad.asset, embeddingType.indices,
+#       curriculumLearningMD=curriculumLearningMetadata(curriculumLearningFlag.noCL))
+runE2E(datasetToLoad.asset, embeddingType.glove,
+       curriculumLearningMD=curriculumLearningMetadata(curriculumLearningFlag.noCL))
+# runE2E(datasetToLoad.asset, embeddingType.bert,
+#       curriculumLearningMD=curriculumLearningMetadata(curriculumLearningFlag.orderedCL, noTokensInInput))

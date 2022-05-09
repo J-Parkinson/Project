@@ -2,7 +2,8 @@ from random import choice
 
 import torch
 
-from projectFiles.seq2seq.constants import EOS, SOS, device, maxLengthSentence, indicesRaw
+from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import SOS, EOS, indicesReverseList
+from projectFiles.seq2seq.constants import device, maxLengthSentence
 # from projectFiles.seq2seq.deprecated.loadEncoderDecoder import loadEncoderDecoder, loadDataForEncoderDecoder
 from projectFiles.seq2seq.embeddingLayers import inputEmbeddingLayer
 
@@ -43,7 +44,7 @@ def evaluate(encoder, decoder, set, embedding, max_length=maxLengthSentence):
                 decoded_words.append('<EOS>')
                 break
             else:
-                decoded_words.append(indicesRaw[topi.item()])
+                decoded_words.append(indicesReverseList[topi.item()])
 
             decoder_input = topi.squeeze().detach()
 
@@ -83,20 +84,3 @@ def evaluateAll(encoder, decoder, dataset, embedding):
         output_sentence = ' '.join(output_words)
         set.addPredicted(output_sentence)
     return testData
-
-# def loadEncoderDecoderDatasetAndEvaluateRandomly(filepath, hiddenLayerWidth=256, maxIndices=253401):
-#    encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
-#
-#    _, datasetData, _, datasetName = loadDataForEncoderDecoder(filepath, maxIndices)
-#
-#    evaluateRandomly(encoder, decoder, datasetData)
-#
-#
-# def loadEncoderDecoderDatasetAndEvaluateAll(filepath, hiddenLayerWidth=256, maxIndices=253401):
-#    encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
-#
-#    _, datasetData, _, datasetName = loadDataForEncoderDecoder(filepath, maxIndices)
-#
-#    return evaluateAll(encoder, decoder, datasetData)
-
-# loadEncoderDecoderDatasetAndEvaluateAll("seq2seq/trainedModels/optimal_asset_025043")

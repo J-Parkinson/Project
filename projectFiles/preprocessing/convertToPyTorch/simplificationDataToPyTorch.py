@@ -4,9 +4,10 @@ from projectFiles.preprocessing.loadDatasets.loadAsset import loadAsset
 from projectFiles.preprocessing.loadDatasets.loadNewsela import loadNewsela
 from projectFiles.preprocessing.loadDatasets.loadWikiLarge import loadWikiLarge
 from projectFiles.preprocessing.loadDatasets.loadWikiSmall import loadWikiSmall
+from projectFiles.seq2seq.constants import maxLengthSentence
 
 
-def simplificationDataToPyTorch(dataset, embedding=embeddingType.indices):
+def simplificationDataToPyTorch(dataset, embedding=embeddingType.indices, maxLen=maxLengthSentence):
     if dataset == datasetToLoad.asset:
         print("Loading ASSET")
         datasetLoaded = loadAsset()
@@ -23,7 +24,9 @@ def simplificationDataToPyTorch(dataset, embedding=embeddingType.indices):
     print("Processing dataset")
 
     # We need to convert the imported simplificationSets into either NLTK or BERT sets depending on the embedding
-    datasetLoaded.loadFromPickle(embedding)
+    datasetLoaded.loadFromPickleAndPad(embedding, maxLen)
+
+    datasetLoaded.filterOutLongSentence(maxLen)
 
     return datasetLoaded
 
