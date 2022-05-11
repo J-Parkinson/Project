@@ -1,6 +1,7 @@
 from projectFiles.helpers.DatasetToLoad import dsName
 from projectFiles.helpers.SimplificationData.SimplificationDatasetLoaders import simplificationDatasetLoader
 from projectFiles.helpers.getHiddenSize import getHiddenSize
+from projectFiles.helpers.getMaxLens import getMaxLens
 from projectFiles.preprocessing.convertToPyTorch.simplificationDataToPyTorch import simplificationDataToPyTorch
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList
 from projectFiles.seq2seq.constants import device
@@ -9,9 +10,11 @@ from projectFiles.seq2seq.seq2seqModel import EncoderRNN, AttnDecoderRNN
 from projectFiles.seq2seq.training import trainMultipleIterations
 
 
-def runSeq2Seq(dataset, embedding, curriculumLearningMD, hiddenLayerWidthForIndices=256, maxLenSentence=115,
-               batchSize=128):
+def runSeq2Seq(dataset, embedding, curriculumLearningMD, hiddenLayerWidthForIndices=256, restrict=200000000,
+               batchSize=128, batchesBetweenValidation=50):
     hiddenLayerWidth = getHiddenSize(hiddenLayerWidthForIndices, embedding)
+
+    maxLenSentence = getMaxLens(dataset, embedding, restrict=restrict)
 
     # Also restricts length of max len sentence in each set (1-n and 1-1)
     datasetLoaded = simplificationDataToPyTorch(dataset, embedding, maxLen=maxLenSentence)
@@ -32,18 +35,6 @@ def runSeq2Seq(dataset, embedding, curriculumLearningMD, hiddenLayerWidthForIndi
                                         datasetName=dsName(dataset), embedding=embedding, batchSize=batchSize,
                                         hiddenLayerWidth=hiddenLayerWidth, curriculumLearning=curriculumLearningMD.flag,
                                         maxLenSentence=maxLenSentence,
-                                        noTokens=len(indicesReverseList))
+                                        noTokens=len(indicesReverseList),
+                                        batchesBetweenValidation=batchesBetweenValidation)
     return epochData
-
-# def runSeq2SeqFromExisting(filepath, hiddenLayerWidth=256, maxIndices=253401):
-#    encoder, decoder = loadEncoderDecoder(filepath, hiddenLayerWidth, maxIndices)
-#
-#    datasetLoaded, datasetOrig, iteration, dataset = loadDataForEncoderDecoder(filepath, maxIndices)
-#    print("Begin iterations")
-#    epochData = trainMultipleIterations(encoder=encoder, decoder=decoder, allData=datasetLoaded, datasetName=dataset,
-#                                                startIter=int(iteration))
-#    return epochData
-
-# runSeq2Seq(
-#    datasetToLoad.asset
-# )

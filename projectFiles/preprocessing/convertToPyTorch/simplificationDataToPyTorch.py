@@ -30,9 +30,7 @@ def simplificationDataToPyTorch(dataset, embedding=embeddingType.indices, maxLen
     initialiseCurriculumLearning(datasetLoaded.test, curriculumLearningMetadata(curriculumLearningFlag.ordered))
 
     # We need to convert the imported simplificationSets into either NLTK or BERT sets depending on the embedding
-    datasetLoaded.loadFromPickleAndPad(embedding, maxLen)
-
-    datasetLoaded.filterOutLongSentence(maxLen)
+    datasetLoaded.loadFromPickleAndPadAndDeleteLong(embedding, maxLen)
 
     return datasetLoaded
 

@@ -275,10 +275,11 @@ def trainOneIteration(trainingMetadata):
 def trainMultipleIterations(trainingMetadata=None, encoder=None, decoder=None, allData=None, datasetName=None,
                             embedding=None, hiddenLayerWidth=None, batchSize=128, curriculumLearning=None,
                             maxLenSentence=maxLengthSentence, noTokens=len(indicesReverseList),
-                            noEpochs=1):
+                            noEpochs=1, batchesBetweenValidation=50):
     if encoder and decoder and allData and datasetName and embedding and curriculumLearning and hiddenLayerWidth:
         trainingMetadata = epochData(encoder, decoder, allData, embedding, curriculumLearning, hiddenLayerWidth,
-                                     datasetName, batchSize, maxLenSentence, noTokens, noEpochs)
+                                     datasetName, batchSize, maxLenSentence, noTokens, noEpochs,
+                                     valCheckEvery=batchesBetweenValidation)
 
     if not epochData:
         raise Exception(

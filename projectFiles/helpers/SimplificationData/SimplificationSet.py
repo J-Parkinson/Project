@@ -22,21 +22,6 @@ class simplificationSet():
         self.allSimpleTorches = None
         self.maxSentenceLen = maxLengthSentence
 
-    def removeByLength(self, maxLength):
-        lengthOriginal = len(self.originalTokenized)
-        if lengthOriginal > maxLength:
-            return 0
-        lengthsSimple = [len(sentence) for sentence in self.allSimpleTokenized]
-        isLarger = [leng <= maxLength for leng in lengthsSimple]
-        deleted = 0
-        for i, leng in enumerate(isLarger):
-            if not leng:
-                del self.allSimpleTokenized[i - deleted]
-                del self.allSimpleIndices[i - deleted]
-                del self.allSimpleTorches[i - deleted]
-                deleted += 1
-        return sum(isLarger)
-
     # WikiSmall/Large escapes brackets and arrows, which we add back in
     def _removeEscapedBracketsFromSentenceWiki(self, sentence):
         for (frm, to) in [("-LRB-", "("), ("-RRB-", ")"), ("-LSB-", "["), ("-RSB-", "]"), ("-LCB-", "{"),

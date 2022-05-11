@@ -26,8 +26,8 @@ def indicesBertToSentences(sentences, manualPad=False):
 
 def indicesNLTKToSentences(sentences):
     words = np.array(indicesReverseList)
-    sentencesTokenized = words[sentences]
-    sentenceNoPadding = [" ".join(filter(lambda x: x != 0, sentence)) for sentence in sentencesTokenized]
+    sentencesTokenized = words[sentences.cpu().numpy()]
+    sentenceNoPadding = [" ".join(sentence).split("<eos>")[0] + "<eos>" for sentence in sentencesTokenized]
     return sentenceNoPadding
 
 

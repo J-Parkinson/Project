@@ -1,15 +1,16 @@
 from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from projectFiles.helpers.curriculumLearningFlag import curriculumLearningFlag, curriculumLearningMetadata
 from projectFiles.helpers.embeddingType import embeddingType
-from projectFiles.seq2seq.evaluate import evaluateAllEpoch
+from projectFiles.seq2seq.evaluate import evaluateAll
 from projectFiles.seq2seq.runSeq2Seq import runSeq2Seq
 
 
-def runE2E(dataset, embedding, curriculumLearningMD):
-    epochData = runSeq2Seq(dataset, embedding, curriculumLearningMD)
+def runE2E(dataset, embedding, curriculumLearningMD, restrict=200000000, batchesBetweenValidation=50):
+    epochData = runSeq2Seq(dataset, embedding, curriculumLearningMD, restrict=restrict,
+                           batchesBetweenValidation=batchesBetweenValidation)
     epochData.printPlots()
     epochData.savePlotData()
-    epochData = evaluateAllEpoch(epochData)
+    epochData = evaluateAll(epochData)
     epochData.saveTestData()
     epochData.evaluateEASSE()
 
@@ -19,8 +20,8 @@ def runE2E(dataset, embedding, curriculumLearningMD):
     # 4. Save encoder/decoder
 
 
-runE2E(datasetToLoad.asset, embeddingType.bert,
-       curriculumLearningMetadata(curriculumLearningFlag.randomized))
+runE2E(datasetToLoad.asset, embeddingType.glove,
+       curriculumLearningMetadata(curriculumLearningFlag.randomized), batchesBetweenValidation=15)
 # runE2E(datasetToLoad.wikilarge, embeddingType.glove,
 #       curriculumLearningMD=curriculumLearningMetadata(curriculumLearningFlag.orderedCL, noTokensInInput))
 # runE2E(datasetToLoad.asset, embeddingType.bert,
