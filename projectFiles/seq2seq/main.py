@@ -20,7 +20,7 @@ def runE2E(dataset, embedding, curriculumLearningMD, restrict=200000000, batches
     # 4. Save encoder/decoder
 
 
-runE2E(datasetToLoad.asset, embeddingType.glove,
+runE2E(datasetToLoad.asset, embeddingType.bert,
        curriculumLearningMetadata(curriculumLearningFlag.randomized), batchesBetweenValidation=15)
 # runE2E(datasetToLoad.wikilarge, embeddingType.glove,
 #       curriculumLearningMD=curriculumLearningMetadata(curriculumLearningFlag.orderedCL, noTokensInInput))

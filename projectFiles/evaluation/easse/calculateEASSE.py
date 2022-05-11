@@ -9,11 +9,7 @@ from easse.sari import get_corpus_sari_operation_scores
 # Wrapper functions which handle evaluation using EASSE (and abstracts away complex optional parameters)
 
 # This duplicates original and predicted sentences to pair up with simplified sentences
-def _sameSizeCreateSentenceLists(simplificationSets):
-    allOriginal = [set.original for set in simplificationSets]
-    allSimplified = [set.allSimple for set in simplificationSets]
-    allPredicted = [set.predicted for set in simplificationSets]
-
+def _sameSizeCreateSentenceLists(allOriginal, allSimplified, allPredicted):
     originalSmeared = [[sentence for _ in range(len(simplified))] for sentence, simplified in
                        zip(allOriginal, allSimplified)]
     predictedSmeared = [[sentence for _ in range(len(simplified))] for sentence, simplified in
@@ -128,7 +124,8 @@ def computeAll(allOriginal, allSimplifiedOriginal, allPredicted, samsa=False):
     allResults = {}
 
     allSimplified = [list(token) for token in zip(*allSimplifiedOriginal)]
-    sameSizeSimplified, sameSizeOriginal, sameSizePredicted = _sameSizeCreateSentenceLists(simplificationSets)
+    sameSizeSimplified, sameSizeOriginal, sameSizePredicted = _sameSizeCreateSentenceLists(allOriginal, allSimplified,
+                                                                                           allPredicted)
 
     constantTimePred = 1 if samsa else 0.05
     print(f"Predicted run time: {int((len(allOriginal) + len(sameSizeSimplified)) / 60 * constantTimePred)} minutes")

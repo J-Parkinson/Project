@@ -101,9 +101,11 @@ class epochData:
                             fileDev.write(f"{x} {y}\n")
 
     def saveTestData(self, allData):
-        spamWriter = csv.writer(open(f"{self.fileSaveDir}/evaluatedSentences.csv", 'wb'))
-        for line in allData:
-            spamWriter.writerow(list(line.values()))
+        with open(f"{self.fileSaveDir}/evaluatedSentences.csv", 'wt') as file:
+            spamWriter = csv.writer(file)
+            spamWriter.writerow(
+                ["Original", "Prediction"] + [f"Simplified {n}" for n in range(len(allData[0]["output"]))])
+            spamWriter.writerows([[line["input"], line["predicted"]] + line["output"] for line in allData])
 
     def evaluateEASSE(self, allData):
         allOriginal = [v["input"] for v in allData]
