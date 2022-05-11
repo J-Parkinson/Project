@@ -31,6 +31,5 @@ def getWordGlove(token, unknowns=False):
 def gloveEmbeddings(tokenized):
     return [getWordGlove(token) for token in tokenized]
 
-
 gloveModel = loadGloveAsWord2Vec()
 sizeOfEmbeddings = 300

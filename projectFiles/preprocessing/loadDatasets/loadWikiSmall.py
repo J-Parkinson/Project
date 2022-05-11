@@ -40,9 +40,9 @@ def loadWikiSmall(loadPickleFile=True, pickleFile=False, isAnonymised=False):
                           zip(testOrig, testSimp)]
         testPairs += setOfTestPairs
 
-    trainPairs = simplificationDataset(trainPairs)
-    validPairs = simplificationDataset(validPairs)
-    testPairs = simplificationDataset(testPairs)
+    trainPairs = simplificationDataset(trainPairs, initialiseCL=not pickleFile)
+    validPairs = simplificationDataset(validPairs, initialiseCL=not pickleFile)
+    testPairs = simplificationDataset(testPairs, initialiseCL=not pickleFile)
 
     dataset = simplificationDatasets(dataset, trainPairs, validPairs, testPairs)
 

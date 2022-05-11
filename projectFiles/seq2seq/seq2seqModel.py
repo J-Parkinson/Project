@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from projectFiles.helpers.embeddingType import embeddingType
-from projectFiles.preprocessing.gloveEmbeddings.gloveNetwork import getGloveEmbeddingNN
+from projectFiles.preprocessing.gloveEmbeddings.gloveNetwork import GloveEmbeddings
 from projectFiles.seq2seq.constants import device, maxLengthSentence
 
 
@@ -11,7 +11,9 @@ from projectFiles.seq2seq.constants import device, maxLengthSentence
 
 # https://pytorch.org/tutorials/intermediate/seq2seq_translation_tutorial.html
 #self.embedding = nn.Embedding(input_size, hidden_size)
+
 class EncoderRNN(nn.Module):
+
     def __init__(self, embeddingTokenSize, hidden_size, embedding, batchSize):
         # print(input_size)
         super(EncoderRNN, self).__init__()
@@ -24,13 +26,12 @@ class EncoderRNN(nn.Module):
         if embedding == embeddingType.indices:
             self.embeddingLayer = nn.Embedding(self.embeddingTokenSize, self.hidden_size)
         elif embedding == embeddingType.glove:
-            self.embeddingLayer = getGloveEmbeddingNN(self.embeddingTokenSize, self.hidden_size)
+            self.embeddingLayer = GloveEmbeddings(embeddingTokenSize)
         else:
             self.embeddingLayer = lambda x: x
 
     def forward(self, input, hidden):
-        embedded = self.embeddingLayer(input)
-        embedded = embedded.unsqueeze(1)
+        embedded = self.embeddingLayer(input).reshape((self.batchSize, 1, -1))
         output, hidden = self.gru(embedded, hidden)
         return output, hidden
 
@@ -51,7 +52,7 @@ class AttnDecoderRNN(nn.Module):
         if embedding == embeddingType.indices:
             self.embeddingLayer = nn.Embedding(self.embeddingTokenSize, self.hidden_size)
         elif embedding == embeddingType.glove:
-            self.embeddingLayer = getGloveEmbeddingNN(self.embeddingTokenSize, self.hidden_size)
+            self.embeddingLayer = GloveEmbeddings(embeddingTokenSize)
         else:
             self.embeddingLayer = lambda x: x
 
@@ -64,8 +65,7 @@ class AttnDecoderRNN(nn.Module):
         self.out = nn.Linear(self.hidden_size, self.embeddingTokenSize)
 
     def forward(self, input, hidden, encoder_outputs):
-        embedded = self.embeddingLayer(input)
-        embedded = embedded.unsqueeze(1)
+        embedded = self.embeddingLayer(input).reshape((self.batchSize, 1, -1))
 
         # if self.embedding != embeddingType.indices:
         #    embedded = nn.Tanh()(embedded)

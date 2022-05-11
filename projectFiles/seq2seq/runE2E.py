@@ -19,9 +19,9 @@ def runE2E(dataset, embedding, curriculumLearningMD):
     # 4. Save encoder/decoder
 
 
-# runE2E(datasetToLoad.asset, embeddingType.indices,
-#       curriculumLearningMD=curriculumLearningMetadata(curriculumLearningFlag.noCL))
-runE2E(datasetToLoad.asset, embeddingType.glove,
-       curriculumLearningMD=curriculumLearningMetadata(curriculumLearningFlag.noCL))
+runE2E(datasetToLoad.asset, embeddingType.bert,
+       curriculumLearningMetadata(curriculumLearningFlag.randomized))
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
+#       curriculumLearningMD=curriculumLearningMetadata(curriculumLearningFlag.orderedCL, noTokensInInput))
 # runE2E(datasetToLoad.asset, embeddingType.bert,
 #       curriculumLearningMD=curriculumLearningMetadata(curriculumLearningFlag.orderedCL, noTokensInInput))

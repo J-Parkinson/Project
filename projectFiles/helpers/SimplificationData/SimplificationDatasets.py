@@ -11,7 +11,7 @@ class simplificationDatasets():
 
     #Loads existing dataset and applies embedding type to each (i.e. tokenizing and creating Torch objects from each)
     def loadFromPickleAndPad(self, embedding, maxLenSentence):
-        totalLen = len(self.train) + len(self.dev) + len(self.test)
+        totalLen = len(self.train.dataset) + len(self.dev.dataset) + len(self.test.dataset)
         nPercent = [totalLen * n // 100 for n in range(100)]
         x = 0
         # self.train[0] fails at the moment due to no indices being created

@@ -69,9 +69,9 @@ def loadNewsela(loadPickleFile=True, pickleFile=False, restrictLanguage="en", fu
 
     print("File loaded.")
 
-    pairsTrain = simplificationDataset(everyPairTrain)
-    pairsDev = simplificationDataset(everyPairDev)
-    pairsTest = simplificationDataset(everyPairTest)
+    pairsTrain = simplificationDataset(everyPairTrain, initialiseCL=not pickleFile)
+    pairsDev = simplificationDataset(everyPairDev, initialiseCL=not pickleFile)
+    pairsTest = simplificationDataset(everyPairTest, initialiseCL=not pickleFile)
 
     dataset = simplificationDatasets(dataset, pairsTrain, pairsDev, pairsTest)
 

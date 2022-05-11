@@ -1,8 +1,8 @@
 from enum import Enum
 
 class curriculumLearningFlag(Enum):
-    noViews = 0
-    noCL = 1
+    ordered = 0
+    randomized = 1
     orderedCL = 2
     sampledFlatCL = 3
     sampledPriorityCL = 4

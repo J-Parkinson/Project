@@ -1,14 +1,13 @@
 import torch
 from torch import nn
 
-from projectFiles.preprocessing.gloveEmbeddings.loadGloveEmbeddings import gloveEmbeddings
-from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import getWord
+from projectFiles.preprocessing.gloveEmbeddings.loadGloveEmbeddings import gloveModel
 from projectFiles.seq2seq.constants import gloveWidth, device
 
 
 def getGloveEmbeddingNN(noTokens, embeddingSize=gloveWidth):
     embeddingLayer = nn.Embedding(noTokens, embeddingSize)
-    embeddingMatrix = gloveEmbeddings([getWord(i) for i in range(noTokens)])
+    embeddingMatrix = gloveModel.vectors
     embeddingLayer.weight = nn.Parameter(torch.tensor(embeddingMatrix, dtype=torch.float32, device=device))
     embeddingLayer.requires_grad_(False)
     return embeddingLayer

@@ -1,10 +1,9 @@
 from enum import Enum
 
 import numpy as np
-import torch
 
 from projectFiles.preprocessing.bertEmbeddings.loadBertEmbeddingsModel import model, tokenizer
-from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import getWord
+from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList
 
 
 class embeddingType(Enum):
@@ -13,51 +12,61 @@ class embeddingType(Enum):
     bert = 2
 
 
-def indicesBertToSentences(sentences):
+def indicesBertToSentences(sentences, manualPad=False):
     # Remove padding
     sentences = tokenizer.batch_decode(sentences.squeeze())
-    sentencesNoPadding = np.array(
-        [" ".join(filter(lambda x: x != "[PAD]", sentence.split(" "))) for sentence in sentences])
-    return sentencesNoPadding
+    if not manualPad:
+        sentences = list(filter(lambda x: x != "",
+                                [" ".join(filter(lambda x: x != "[PAD]", sentence.split(" "))) for sentence in
+                                 sentences]))
+        # What if [SEP] is followed by garbage?
+    sentences = [sentence.split("[SEP]")[0] + "[SEP]" for sentence in sentences]
+    return sentences
 
 
 def indicesNLTKToSentences(sentences):
-    sentenceNoPadding = [z for p, z in enumerate(sentences) if sentences[p:] != [0 for _ in range(len(sentences[p:]))]]
-    sentenceTokenized = np.array([getWord(ind) for ind in sentenceNoPadding])
-    return sentenceTokenized
+    words = np.array(indicesReverseList)
+    sentencesTokenized = words[sentences]
+    sentenceNoPadding = [" ".join(filter(lambda x: x != 0, sentence)) for sentence in sentencesTokenized]
+    return sentenceNoPadding
 
 
-def bertToSentences(sentences, batchSize):
+def bertToSentences(sentences, batchSize, manualPad=False):
     noIters = sentences.shape[0] // batchSize
     allTokenized = []
     for x in range(noIters):
-        bertResult = model.get_output_embeddings()(sentences[x * batchSize:(x + 1) * batchSize - 1])
+        bertResult = model.get_output_embeddings()(sentences[x * batchSize:(x + 1) * batchSize])
         allTokenized += [decodedSentence.softmax(0).argmax(1).cpu().numpy() for decodedSentence in bertResult]
-    return indicesBertToSentences(np.array(allTokenized))
+    return indicesBertToSentences(np.array(allTokenized), manualPad)
 
 
 # input: numpy array
-def convertDataBackToWords(allSimplified, allInputs, allPredicted, embedding, batchSize):
+def convertDataBackToWords(allInputIndices, allOutputIndices, allPredicted, embedding, batchSize):
     # This function first pairs the same inputs / predicteds with all simplifieds
 
-    allData = torch.hstack((np.expand_dims(allInputs, axis=1),
-                            np.expand_dims(allPredicted, axis=1),
-                            np.expand_dims(allSimplified, axis=1)))
-    dataKeys = [str(sentence) for sentence in allData[:, 0]]
-    dataDict = {k: {"original": "", "predicted": "", "simplified": []} for k in set(dataKeys)}
-    for setOfData in allData:
-        dataDict[str(setOfData[0])]["original"] = setOfData[0]
-        dataDict[set(setOfData[0])]["predicted"] = setOfData[1]
-        dataDict[str(setOfData[0])]["simplified"].append(setOfData[2])
-
-    dataDict = list(dataDict.values())
-
-    if embedding == embeddingType.indices:
-        pass
-    elif embedding == embeddingType.glove:
-        pass
+    if embedding == embeddingType.bert:
+        allInputIndicesSentenced = indicesBertToSentences(allInputIndices.squeeze())
+        allOutputIndicesSentenced = indicesBertToSentences(allOutputIndices.squeeze())
+        allPredictedSentenced = bertToSentences(allPredicted.squeeze(), batchSize, manualPad=True)
     else:
-        pass
+        allInputIndicesSentenced = indicesNLTKToSentences(allInputIndices.squeeze())
+        allOutputIndicesSentenced = indicesNLTKToSentences(allOutputIndices.squeeze())
+        allPredictedSentenced = indicesNLTKToSentences(allPredicted.squeeze())
 
-    # Remove padding
-    return None
+    allPredictedSentenced = allPredictedSentenced[:len(allInputIndicesSentenced)]
+
+    inputSentenceNo = [0]
+    for a in range(len(allInputIndicesSentenced) - 1):
+        inputSentenceNo += [inputSentenceNo[-1] + int(allInputIndicesSentenced[a] != allInputIndicesSentenced[a + 1])]
+
+    returnType = [{"input": "", "output": [], "predicted": []} for _ in range(inputSentenceNo[-1] + 1)]
+    for inp, out, pred, sentNo in zip(allInputIndicesSentenced, allOutputIndicesSentenced, allPredictedSentenced,
+                                      inputSentenceNo):
+        returnType[sentNo]["input"] = inp
+        returnType[sentNo]["output"].append(out)
+        returnType[sentNo]["predicted"].append(pred)
+
+    allInputs = [d["input"] for d in returnType]
+    allOutputs = [d["output"] for d in returnType]
+    allPredicted = [d["predicted"][0] for d in returnType]  # TODO: CHECK BUG HERE
+    return allInputs, allOutputs, allPredicted

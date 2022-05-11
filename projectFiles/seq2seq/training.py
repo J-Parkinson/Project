@@ -25,6 +25,7 @@ def lossCriterion(embedding):
         nTotal = mask.sum()
         NLL = -torch.gather(inp, 1, target.view(-1, 1)).squeeze(1)
         loss = NLL.masked_select(mask).mean()
+        loss = torch.nan_to_num(loss)
         loss = loss.to(device)
         return loss, nTotal.item()
 
@@ -41,6 +42,7 @@ def lossCriterion(embedding):
         MSE = nn.MSELoss(reduction="none")
         loss = MSE(output, expected)
         loss = loss.masked_select(mask).mean()
+        loss = torch.nan_to_num(loss)
         loss = loss.to(device)
         return loss
 
@@ -64,7 +66,8 @@ def train(batch, encoder_optimizer, decoder_optimizer, criterion, trainingMetada
 
     input = batch["input"]
     output = batch["output"]
-    indices = batch["indicesInput"]
+    indicesInput = batch["indicesInput"]
+    indicesOutput = batch["indicesOutput"]
 
     # This module is self contained -- we should get batch sizes and lengths from outside
 
@@ -88,18 +91,18 @@ def train(batch, encoder_optimizer, decoder_optimizer, criterion, trainingMetada
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, encoder_outputs)
             decoder_input = output[:, di]  # Teacher forcing
-            loss += criterion(decoder_output, output[:, di], indices[:, di])
+            loss += criterion(decoder_output, output[:, di], indicesOutput[:, di])
 
     else:
         # Without teacher forcing: use its own predictions as the next input
         for di in range(1, maxLen):
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, encoder_outputs)
-            decoded_output = decoder_output.squeeze()
+            loss += criterion(decoder_output, output[:, di], indicesOutput[:, di])
+            decoder_output = decoder_output.squeeze()
             if embedding != embeddingType.bert:
-                _, decoded_output = decoded_output.topk(1)
-            decoder_input = decoded_output.detach()  # detach from history as input
-            loss += criterion(decoder_output, output[:, di], indices[:, di])
+                _, decoder_output = decoder_output.topk(1)
+            decoder_input = decoder_output.detach()  # detach from history as input
 
     loss.backward()
 
@@ -110,7 +113,10 @@ def train(batch, encoder_optimizer, decoder_optimizer, criterion, trainingMetada
     encoder_optimizer.step()
     decoder_optimizer.step()
 
-    return loss.item() / maxLen
+    if embedding == embeddingType.bert:
+        return loss.item()
+    else:
+        return loss.item() / maxLen
 
 
 def validationLoss(dataLoader, criterion, trainingMetadata):
@@ -125,8 +131,9 @@ def validationLoss(dataLoader, criterion, trainingMetadata):
     loss = 0
 
     # allInputs = []
-    allOutputs = []
-    allIndices = []
+    # allOutputs = []
+    allInputIndices = []
+    allOutputIndices = []
     allDecoderOutputs = []
 
     with torch.no_grad():
@@ -135,11 +142,12 @@ def validationLoss(dataLoader, criterion, trainingMetadata):
             encoder_hidden = encoder.initHidden()
 
             input = batch["input"]
-            # allInputs.append(input)
             output = batch["output"]
-            allOutputs.append(output)
-            indices = batch["indicesInput"]
-            allIndices.append(indices)
+            # allOutputs.append(output)
+            indicesInput = batch["indicesInput"]
+            allInputIndices.append(indicesInput)
+            indicesOutput = batch["indicesOutput"]
+            allOutputIndices.append(indicesOutput)
 
             encoder_outputs = torch.zeros(batchSize, maxLen, encoder.hidden_size, device=device)
 
@@ -150,58 +158,40 @@ def validationLoss(dataLoader, criterion, trainingMetadata):
 
             decoder_input = input[:, 0]
             decoder_outputs = []
-            decoder_outputs.append(decoder_input.unsqueeze(1))
-
             decoder_hidden = encoder_hidden
 
             for di in range(1, maxLen):
+                decoder_outputs.append(decoder_input)
                 decoder_output, decoder_hidden, decoder_attention = decoder(
                     decoder_input, decoder_hidden, encoder_outputs)
+                loss += criterion(decoder_output, output[:, di], indicesOutput[:, di])
                 decoded_output = decoder_output.squeeze()
                 if embedding != embeddingType.bert:
                     _, decoded_output = decoded_output.topk(1)
-                decoder_outputs.append(decoder_output)
                 decoder_input = decoded_output.detach()  # detach from history as input
-                loss += criterion(decoder_output, output[:, di], indices[:, di])
 
-            decoder_outputs = torch.hstack(decoder_outputs)
+            decoder_outputs.append(decoder_input)
+
+            decoder_outputs = torch.dstack(decoder_outputs)
             allDecoderOutputs.append(decoder_outputs)
 
-    allSimplified = torch.vstack(allOutputs).detach()
-    allInputs = torch.vstack(allIndices).detach()
-    allPredicted = torch.vstack(allDecoderOutputs).detach()
+    allPredicted = torch.vstack(allDecoderOutputs).detach().swapaxes(1, 2)
+    allInputIndices = torch.vstack(allInputIndices).detach()
+    allOutputIndices = torch.vstack(allOutputIndices).detach()
 
-    allSimplified, allInputs, allPredicted = convertDataBackToWords(allSimplified, allInputs, allPredicted, embedding,
-                                                                    batchSize)
-
-    results = computeValidation(allOutputs, allIndices, allDecoderOutputs)
+    allInputs, allOutputs, allPredicted = convertDataBackToWords(allInputIndices, allOutputIndices, allPredicted,
+                                                                 embedding,
+                                                                 batchSize)
+    results = computeValidation(allInputs, allOutputs, allPredicted)
 
     results["i"] = batchNoGlobal
 
     resultsGlobal.append(results)
 
-    return loss / (batchNo + 1), epochData
-
-
-def trainMultipleIterations(trainingMetadata=None, encoder=None, decoder=None, allData=None, datasetName=None,
-                            embedding=None, hiddenLayerWidth=None, batchSize=128, curriculumLearning=None,
-                            earlyStopping=False, maxLenSentence=maxLengthSentence, noTokens=len(indicesReverseList)):
-    if encoder and decoder and allData and datasetName and embedding and curriculumLearning and hiddenLayerWidth:
-        trainingMetadata = epochData(encoder, decoder, allData, embedding, curriculumLearning, hiddenLayerWidth,
-                                     datasetName, batchSize, earlyStopping, maxLenSentence, noTokens)
-
-    if not epochData:
-        raise Exception(
-            "Inadequate input -- provide either an epochData object or encoder/decoder/trainingData/datasetName")
-
-    while trainingMetadata.epochFinished:
-        print(f"\n\nEpoch {trainingMetadata.epochNo}:")
-        trainingMetadata = trainOneIteration(trainingMetadata)
-        trainingMetadata.startIter = 0
-        trainingMetadata.nextEpoch()
-
-    return trainingMetadata
-
+    if embedding == embeddingType.bert:
+        return loss.item() / (batchNo + 1), trainingMetadata
+    else:
+        return loss.item() / maxLen / (batchNo + 1), trainingMetadata
 
 def trainOneIteration(trainingMetadata):
     # All metadata items in trainingMetadata (epochData) are either
@@ -228,11 +218,7 @@ def trainOneIteration(trainingMetadata):
     for batchNo, batchViews in enumerate(trainingDataLoader):
         trainingMetadata.batchNoGlobal += 1
 
-        if trainingMetadata.checkIfEpochShouldEnd():
-            trainingMetadata.epochFinished = False
-            return trainingMetadata
-
-        print(batchViews["input"].shape)
+        print(f"Batch {batchNo} running...")
 
         loss = train(batchViews, encoder_optimizer, decoder_optimizer, criterion,
                      trainingMetadata)  # .encoder, trainingMetadata.decoder,
@@ -282,5 +268,24 @@ def trainOneIteration(trainingMetadata):
 
     trainingMetadata.plot_losses.append((trainingMetadata.batchNoGlobal + 1, plot_loss_avg))
     trainingMetadata.plot_dev_losses.append((trainingMetadata.batchNoGlobal + 1, devLoss))
+
+    return trainingMetadata
+
+
+def trainMultipleIterations(trainingMetadata=None, encoder=None, decoder=None, allData=None, datasetName=None,
+                            embedding=None, hiddenLayerWidth=None, batchSize=128, curriculumLearning=None,
+                            maxLenSentence=maxLengthSentence, noTokens=len(indicesReverseList),
+                            noEpochs=1):
+    if encoder and decoder and allData and datasetName and embedding and curriculumLearning and hiddenLayerWidth:
+        trainingMetadata = epochData(encoder, decoder, allData, embedding, curriculumLearning, hiddenLayerWidth,
+                                     datasetName, batchSize, maxLenSentence, noTokens, noEpochs)
+
+    if not epochData:
+        raise Exception(
+            "Inadequate input -- provide either an epochData object or encoder/decoder/trainingData/datasetName")
+
+    while trainingMetadata.nextEpoch():
+        print(f"\n\nEpoch {trainingMetadata.epochNo}:")
+        trainingMetadata = trainOneIteration(trainingMetadata)
 
     return trainingMetadata

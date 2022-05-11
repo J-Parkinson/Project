@@ -50,14 +50,15 @@ class simplificationDatasetLoader():
     def _collateFunction(self, views):
         inputEmbeddings = self.convertToInputEmbedding(views, self.embedding)
         outputEmbeddings = self.convertToOutputEmbedding(views, self.embedding)
-        inputIndices = self.convertToOutputEmbedding(views, embeddingType.indices)
-        return {"input": inputEmbeddings, "output": outputEmbeddings, "indicesInput": inputIndices}
+        inputIndices = self.convertToInputEmbedding(views, embeddingType.indices)
+        outputIndices = self.convertToOutputEmbedding(views, embeddingType.indices)
+        return {"input": inputEmbeddings, "output": outputEmbeddings, "indicesInput": inputIndices,
+                "indicesOutput": outputIndices}
 
-    def __init__(self, simpDS, embedding, batch_size=128, shuffle=False):
+    def __init__(self, simpDS, embedding, batch_size=128):
         self.dataset = simpDS.dataset
         self.embedding = embedding
         self.batch_size = batch_size
-        self.trainDL = DataLoader(simpDS.train, batch_size=batch_size, collate_fn=self._collateFunction,
-                                  shuffle=shuffle)
-        self.devDL = DataLoader(simpDS.dev, batch_size=batch_size, collate_fn=self._collateFunction, shuffle=shuffle)
-        self.testDL = DataLoader(simpDS.test, batch_size=batch_size, collate_fn=self._collateFunction, shuffle=shuffle)
+        self.trainDL = DataLoader(simpDS.train, batch_size=batch_size, collate_fn=self._collateFunction, shuffle=False)
+        self.devDL = DataLoader(simpDS.dev, batch_size=batch_size, collate_fn=self._collateFunction, shuffle=False)
+        self.testDL = DataLoader(simpDS.test, batch_size=batch_size, collate_fn=self._collateFunction, shuffle=False)

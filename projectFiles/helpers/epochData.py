@@ -1,11 +1,8 @@
 import os
 
-from projectFiles.checkers.getTrainDevTestSizes import sizes
 from projectFiles.constants import projectLoc
 from projectFiles.evaluation.easse.calculateEASSE import computeAll
-from projectFiles.helpers.DatasetToLoad import name2DTL
 from projectFiles.helpers.epochTiming import Timer
-from projectFiles.preprocessing.gloveEmbeddings.gloveNetwork import GloveEmbeddings
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList
 from projectFiles.seq2seq.constants import maxLengthSentence
 from projectFiles.seq2seq.plots import showPlot
@@ -13,19 +10,17 @@ from projectFiles.seq2seq.plots import showPlot
 
 class epochData:
     def __init__(self, encoder, decoder, data, embedding, curriculumLearning, hiddenLayerWidth, datasetName="",
-                 batchSize=128, earlyStopping=False, maxLenSentence=maxLengthSentence,
-                 noTokens=len(indicesReverseList), locationToSaveTo="seq2seq/trainedModels/", learningRate=0.01,
+                 batchSize=128, maxLenSentence=maxLengthSentence, noTokens=len(indicesReverseList),
+                 noEpochs=1, locationToSaveTo="seq2seq/trainedModels/", learningRate=0.01,
                  timer=Timer(), plot_losses=None, plot_dev_losses=None, minLoss=999999999, minDevLoss=999999999,
                  lastIterOfDevLossImp=0, optimalEncoder=None, optimalDecoder=None, fileSaveDir=None, iGlobal=0,
-                 valCheckEvery=50, earlyStopAfterNoImpAfterIter=None, clipGrad=50):
+                 valCheckEvery=50, clipGrad=50):
         if plot_dev_losses is None:
             plot_dev_losses = []
         if plot_losses is None:
             plot_losses = []
         if not fileSaveDir:
             fileSaveDir = f"{projectLoc}/{locationToSaveTo}{datasetName}_CL-{curriculumLearning.name}_{embedding.name}_{timer.getStartTime().replace(':', '')}"
-        if not earlyStopAfterNoImpAfterIter:
-            earlyStopAfterNoImpAfterIter = sizes[name2DTL(datasetName)][0] // 3 // batchSize
         os.mkdir(fileSaveDir)
         self.curriculumLearning = curriculumLearning
         self.encoder = encoder
@@ -45,25 +40,19 @@ class epochData:
         self.fileSaveDir = fileSaveDir
         self.batchNoGlobal = iGlobal
         self.valCheckEvery = valCheckEvery
-        self.epochFinished = True
-        self.earlyStopAfterNoImpAfterIter = earlyStopAfterNoImpAfterIter
-        self.epochNo = 1
+        self.epochNo = 0
         self.embedding = embedding
         self.results = []
         self.batchSize = batchSize
-        self.earlyStopping = earlyStopping
         self.maxLenSentence = maxLenSentence
         self.hiddenLayerWidth = hiddenLayerWidth
         self.noTokens = noTokens
-        self.gloveEmbeddingModel = GloveEmbeddings(self.noTokens, self.hiddenLayerWidth)
         self.clipGrad = clipGrad
+        self.noEpochs = noEpochs
 
     def nextEpoch(self):
         self.epochNo += 1
-
-    def checkIfEpochShouldEnd(self):
-        return (self.batchNoGlobal - self.lastIterOfDevLossImp) > self.earlyStopAfterNoImpAfterIter \
-               and self.earlyStopping
+        return self.epochNo <= self.noEpochs
 
     def printPlots(self):
         print("Making plots")
@@ -127,5 +116,4 @@ class epochData:
                f"Batch size: {self.batchSize}\n" \
                f"Min loss: {self.minLoss}\n" \
                f"Min dev loss: {self.minDevLoss}\n" \
-               f"Check dev loss every {self.valCheckEvery} sentences\n" \
-               f"Early stop after {self.earlyStopAfterNoImpAfterIter} sentences of no validation loss improvement"
+               f"Check dev loss every {self.valCheckEvery} sentences\n"
