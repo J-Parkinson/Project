@@ -12,7 +12,7 @@ def runE2E(dataset, embedding, curriculumLearningMD, restrict=200000000, batches
     epochData.savePlotData()
     allData = evaluate(epochData)
     epochData.saveTestData(allData)
-    epochData.evaluateEASSE()
+    epochData.evaluateEASSE(allData)
 
     # 1. printPlots
     # 2. Save all evaluated test data and plot data

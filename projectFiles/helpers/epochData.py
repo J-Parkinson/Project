@@ -105,8 +105,12 @@ class epochData:
         for line in allData:
             spamWriter.writerow(list(line.values()))
 
-    def evaluateEASSE(self):
-        easseResults = computeAll(self.data.test)
+    def evaluateEASSE(self, allData):
+        allOriginal = [v["input"] for v in allData]
+        allSimplified = [v["output"] for v in allData]
+        allPredicted = [v["predicted"] for v in allData]
+
+        easseResults = computeAll(allOriginal, allSimplified, allPredicted)
         with open(f"{self.fileSaveDir}/easse.txt", "w+") as file:
             for k, v in easseResults.items():
                 file.write(f"{k}:{v}\n")

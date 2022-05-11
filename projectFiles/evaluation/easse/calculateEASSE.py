@@ -124,13 +124,10 @@ def computeValidation(allOriginal, allSimplifiedSets, allPredicted):
 
 
 #Evaluation function for test set
-def computeAll(simplificationSets, samsa=False):
+def computeAll(allOriginal, allSimplifiedOriginal, allPredicted, samsa=False):
     allResults = {}
 
-    allOriginal = [set.original for set in simplificationSets]
-    allSimplifiedOriginal = [set.allSimple for set in simplificationSets]
     allSimplified = [list(token) for token in zip(*allSimplifiedOriginal)]
-    allPredicted = [set.predicted for set in simplificationSets]
     sameSizeSimplified, sameSizeOriginal, sameSizePredicted = _sameSizeCreateSentenceLists(simplificationSets)
 
     constantTimePred = 1 if samsa else 0.05

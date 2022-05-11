@@ -7,7 +7,7 @@ from projectFiles.seq2seq.constants import device
 # from projectFiles.seq2seq.deprecated.loadEncoderDecoder import loadEncoderDecoder, loadDataForEncoderDecoder
 
 def evaluate(trainingMetadata):
-    dataLoader = trainingMetadata.data.test
+    dataLoader = trainingMetadata.data.testDL
     encoder = trainingMetadata.encoder
     decoder = trainingMetadata.decoder
     batchSize = trainingMetadata.batchSize
@@ -64,9 +64,6 @@ def evaluate(trainingMetadata):
 
     allData = [{"input": inp, "output": out, "predicted": pred} for inp, out, pred in
                zip(allInputs, allOutputs, allPredicted)]
-
-    for set, prediction in zip(trainingMetadata.data.test.dataset, allPredicted):
-        set.predicted = prediction
 
     return allData
 
