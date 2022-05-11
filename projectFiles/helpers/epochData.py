@@ -69,7 +69,7 @@ class epochData:
             for metric in metrics:
                 xPos = [x["i"] for x in self.results]
                 yPos = [x[metric] for x in self.results]
-                showPlot(*list(zip(xPos, yPos)), metric, self.fileSaveDir)
+                showPlot(list(zip(xPos, yPos)), metric, self.fileSaveDir)
 
     def savePlotData(self):
         with open(f"{self.fileSaveDir}/plotData.txt", "w+") as file:
