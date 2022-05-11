@@ -33,12 +33,27 @@ def evaluateAndShowAttention(encoder, decoder, inputSentence):
     showAttention(inputSentence, output_words, attentions)
 
 def showPlot(x, y, title, saveLoc):
-    plt.figure()
-    fig, ax = plt.subplots()
-    # this locator puts ticks at regular intervals
-    plt.plot(x, y)
-    plt.title(title)
-    plt.xlabel("Sentence number")
-    plt.ylabel("Average loss per sentence")
-    plt.savefig(f"{saveLoc}/loss_{time()}.png", dpi=fig.dpi)
-    plt.show()
+    title = title.split("`")
+    titleName = title[0]
+    if len(title) == 1:
+        plt.figure()
+        fig, ax = plt.subplots()
+        plt.plot(x, y)
+        plt.title(titleName)
+        plt.xlabel("Sentence number")
+        plt.ylabel("Average loss per sentence")
+        plt.savefig(f"{saveLoc}/loss_{time()}.png", dpi=fig.dpi)
+        plt.show()
+    else:
+        titleLegend = title[1].split("/")
+        plt.figure()
+        fig, ax = plt.subplots()
+        # this locator puts ticks at regular intervals
+        for i in range(len(titleLegend)):
+            plt.plot(x, [y1[i] for y1 in y], label=titleLegend[i])
+        plt.title(titleName)
+        plt.xlabel("Sentence number")
+        plt.ylabel("Average loss per sentence")
+        plt.legend()
+        plt.savefig(f"{saveLoc}/loss_{time()}.png", dpi=fig.dpi)
+        plt.show()

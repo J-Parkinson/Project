@@ -1,3 +1,4 @@
+import csv
 import os
 
 from projectFiles.constants import projectLoc
@@ -69,7 +70,7 @@ class epochData:
             for metric in metrics:
                 xPos = [x["i"] for x in self.results]
                 yPos = [x[metric] for x in self.results]
-                showPlot(list(zip(xPos, yPos)), metric, self.fileSaveDir)
+                showPlot(xPos, yPos, metric, self.fileSaveDir)
 
     def savePlotData(self):
         with open(f"{self.fileSaveDir}/plotData.txt", "w+") as file:
@@ -86,18 +87,23 @@ class epochData:
             for metric in metrics:
                 xPos = [x["i"] for x in self.results]
                 yPos = [x[metric] for x in self.results]
-                with open(f"{self.fileSaveDir}/{metric}.txt", "w+") as fileDev:
-                    for x, y in zip(xPos, yPos):
-                        fileDev.write(f"{x} {y}\n")
+                metricNameParts = metric.split("`")
+                metricName = metricNameParts[0]
+                if len(metricNameParts) > 1:
+                    metricNameComps = metric.split("`")[1].split("/")
+                    for yI, comp in enumerate(metricNameComps):
+                        with open(f"{self.fileSaveDir}/{metricName}_{comp}.txt", "w+") as fileDev:
+                            for x, y in zip(xPos, [yW[yI] for yW in yPos]):
+                                fileDev.write(f"{x} {y}\n")
+                else:
+                    with open(f"{self.fileSaveDir}/{metricName}.txt", "w+") as fileDev:
+                        for x, y in zip(xPos, yPos):
+                            fileDev.write(f"{x} {y}\n")
 
-    def saveTestData(self):
-        with open(f"{self.fileSaveDir}/originalSentences.txt", "w+") as file:
-            for setV in self.data.test:
-                file.write(f"{setV.original}\n")
-
-        with open(f"{self.fileSaveDir}/predictedSimplifications.txt", "w+") as file:
-            for setV in self.data.test:
-                file.write(f"{setV.predicted}\n")
+    def saveTestData(self, allData):
+        spamWriter = csv.writer(open(f"{self.fileSaveDir}/evaluatedSentences.csv", 'wb'))
+        for line in allData:
+            spamWriter.writerow(list(line.values()))
 
     def evaluateEASSE(self):
         easseResults = computeAll(self.data.test)

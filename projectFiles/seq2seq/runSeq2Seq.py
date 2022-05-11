@@ -5,7 +5,6 @@ from projectFiles.helpers.getMaxLens import getMaxLens
 from projectFiles.preprocessing.convertToPyTorch.simplificationDataToPyTorch import simplificationDataToPyTorch
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList
 from projectFiles.seq2seq.constants import device
-from projectFiles.seq2seq.initialiseCurriculumLearning import initialiseCurriculumLearning
 from projectFiles.seq2seq.seq2seqModel import EncoderRNN, AttnDecoderRNN
 from projectFiles.seq2seq.training import trainMultipleIterations
 
@@ -17,10 +16,8 @@ def runSeq2Seq(dataset, embedding, curriculumLearningMD, hiddenLayerWidthForIndi
     maxLenSentence = getMaxLens(dataset, embedding, restrict=restrict)
 
     # Also restricts length of max len sentence in each set (1-n and 1-1)
-    datasetLoaded = simplificationDataToPyTorch(dataset, embedding, maxLen=maxLenSentence)
+    datasetLoaded = simplificationDataToPyTorch(dataset, embedding, curriculumLearningMD, maxLen=maxLenSentence)
     print("Dataset loaded")
-
-    initialiseCurriculumLearning(datasetLoaded.train, curriculumLearningMD)
 
     # batching
     datasetBatches = simplificationDatasetLoader(datasetLoaded, embedding, batch_size=batchSize)

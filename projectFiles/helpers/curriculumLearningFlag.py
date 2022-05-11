@@ -1,6 +1,7 @@
 from enum import Enum
 
 class curriculumLearningFlag(Enum):
+    evaluationMode = -1
     ordered = 0
     randomized = 1
     orderedCL = 2

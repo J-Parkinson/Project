@@ -108,17 +108,17 @@ def computeValidation(allOriginal, allSimplifiedSets, allPredicted):
     # SARI scores
     sariMacro, sariMacroAdd, sariMacroKeep, sariMacroDel = calculateSARI(allOriginal, allPredicted, allSimplified,
                                                                          microSari=False)
-    allResults["SARI macro avg/add/keep/delete scores"] = (sariMacro, sariMacroAdd, sariMacroKeep, sariMacroDel)
+    allResults["SARI macro scores`Average/Add/Keep/Delete"] = (sariMacro, sariMacroAdd, sariMacroKeep, sariMacroDel)
     sariMicro, sariMicroAdd, sariMicroKeep, sariMicroDel = calculateSARI(allOriginal, allPredicted, allSimplified,
                                                                          microSari=True)
-    allResults["SARI micro avg/add/keep/delete scores"] = (sariMicro, sariMicroAdd, sariMicroKeep, sariMicroDel)
+    allResults["SARI micro scores`Average/Add/Keep/Delete"] = (sariMicro, sariMicroAdd, sariMicroKeep, sariMicroDel)
 
     print("Computing BERTscore")
     # BERTscore
     bertScoreOriginal = calculateBERTScore(allOriginal, allSimplified)
-    allResults["BERTscore for original vs simplified sentences"] = bertScoreOriginal
+    allResults["BERTscore for original vs simplified sentences`Precision/Recall/F1"] = bertScoreOriginal
     bertScorePredictions = calculateBERTScore(allPredicted, allSimplified)
-    allResults["BERTscore for predicted vs simplified sentences"] = bertScorePredictions
+    allResults["BERTscore for predicted vs simplified sentences`Precision/Recall/F1"] = bertScorePredictions
 
     return allResults
 

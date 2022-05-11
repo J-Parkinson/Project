@@ -1,7 +1,7 @@
 from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from projectFiles.helpers.curriculumLearningFlag import curriculumLearningFlag, curriculumLearningMetadata
 from projectFiles.helpers.embeddingType import embeddingType
-from projectFiles.seq2seq.evaluate import evaluateAll
+from projectFiles.seq2seq.evaluate import evaluate
 from projectFiles.seq2seq.runSeq2Seq import runSeq2Seq
 
 
@@ -10,8 +10,8 @@ def runE2E(dataset, embedding, curriculumLearningMD, restrict=200000000, batches
                            batchesBetweenValidation=batchesBetweenValidation)
     epochData.printPlots()
     epochData.savePlotData()
-    epochData = evaluateAll(epochData)
-    epochData.saveTestData()
+    allData = evaluate(epochData)
+    epochData.saveTestData(allData)
     epochData.evaluateEASSE()
 
     # 1. printPlots

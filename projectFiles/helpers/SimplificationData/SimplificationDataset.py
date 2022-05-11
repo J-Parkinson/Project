@@ -20,14 +20,18 @@ class simplificationDataset(Dataset):
     # Every dataset is initialised without curriculum learning, and it is initialised later (since we also need to provide a curriculum learning function)
     def initialiseCurriculumLearning(self, flag, lambdaFunc=None):
         self.curriculumLearning = flag
-        if flag in [curriculumLearningFlag.randomized, curriculumLearningFlag.ordered]:
+        if flag in [curriculumLearningFlag.randomized,
+                    curriculumLearningFlag.ordered,
+                    curriculumLearningFlag.evaluationMode]:
             self.lambdaFunc = lambda _1, _2: random()
         else:
             self.lambdaFunc = lambdaFunc
         self._curriculumLearningSortDataset(self.lambdaFunc)
-        if flag == curriculumLearningFlag.ordered:
+        if flag in [curriculumLearningFlag.ordered, curriculumLearningFlag.evaluationMode]:
             self.curriculumLearningIndices.sort(key=lambda x: x[1])
             self.curriculumLearningIndices.sort(key=lambda x: x[0])
+        if flag == curriculumLearningFlag.evaluationMode:
+            self.curriculumLearningIndices = [x for x in self.curriculumLearningIndices if x[1] == 0]
 
     # First order function which takes curriculum learning function and applies this to the dataset
     # Returned indices are then used to fetch each element of the dataset (since otherwise we would be unable to

@@ -6,14 +6,13 @@ from projectFiles.seq2seq.constants import device
 
 # from projectFiles.seq2seq.deprecated.loadEncoderDecoder import loadEncoderDecoder, loadDataForEncoderDecoder
 
-def evaluate(dataLoader, criterion, trainingMetadata):
+def evaluate(trainingMetadata):
+    dataLoader = trainingMetadata.data.test
     encoder = trainingMetadata.encoder
     decoder = trainingMetadata.decoder
     batchSize = trainingMetadata.batchSize
     maxLen = trainingMetadata.maxLenSentence
     embedding = trainingMetadata.embedding
-    batchNoGlobal = trainingMetadata.batchNoGlobal
-    resultsGlobal = trainingMetadata.results
 
     allInputIndices = []
     allOutputIndices = []
@@ -63,16 +62,13 @@ def evaluate(dataLoader, criterion, trainingMetadata):
                                                                  embedding,
                                                                  batchSize)
 
-    return allPredicted
+    allData = [{"input": inp, "output": out, "predicted": pred} for inp, out, pred in
+               zip(allInputs, allOutputs, allPredicted)]
 
+    for set, prediction in zip(trainingMetadata.data.test.dataset, allPredicted):
+        set.predicted = prediction
 
-def evaluateAll(epochData):
-    testData = epochData.data.test.dataset
-    for set in testData:
-        output_words = evaluate(epochData.encoder, epochData.decoder, set, epochData.embedding)
-        output_sentence = ' '.join(output_words)
-        set.addPredicted(output_sentence)
-    return epochData
+    return allData
 
 # def evaluateOld(encoder, decoder, set, embedding, max_length=maxLengthSentence):
 #    with torch.no_grad():
