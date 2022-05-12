@@ -10,7 +10,7 @@ from projectFiles.seq2seq.training import trainMultipleIterations
 
 
 def runSeq2Seq(dataset, embedding, curriculumLearningMD, hiddenLayerWidthForIndices=256, restrict=200000000,
-               batchSize=128, batchesBetweenValidation=50):
+               batchSize=64, batchesBetweenValidation=50):
     hiddenLayerWidth = getHiddenSize(hiddenLayerWidthForIndices, embedding)
 
     maxLenSentence = getMaxLens(dataset, embedding, restrict=restrict)

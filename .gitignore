@@ -3,3 +3,4 @@ datasets/
 easse/
 .idea/
 projectFiles/constants.py
+projectFiles/seq2seq/trainedModels/
