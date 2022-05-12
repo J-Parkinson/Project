@@ -9,7 +9,9 @@ from projectFiles.seq2seq.constants import device
 def evaluate(trainingMetadata):
     dataLoader = trainingMetadata.data.testDL
     encoder = trainingMetadata.encoder
+    encoder.eval()
     decoder = trainingMetadata.decoder
+    decoder.eval()
     batchSize = trainingMetadata.batchSize
     maxLen = trainingMetadata.maxLenSentence
     embedding = trainingMetadata.embedding

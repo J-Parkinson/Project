@@ -53,7 +53,9 @@ def lossCriterion(embedding):
 
 def train(batch, encoder_optimizer, decoder_optimizer, criterion, trainingMetadata):
     encoder = trainingMetadata.encoder
+    encoder.train()
     decoder = trainingMetadata.decoder
+    decoder.train()
     batchSize = trainingMetadata.batchSize
     maxLen = trainingMetadata.maxLenSentence
     embedding = trainingMetadata.embedding
@@ -121,7 +123,9 @@ def train(batch, encoder_optimizer, decoder_optimizer, criterion, trainingMetada
 
 def validationLoss(dataLoader, criterion, trainingMetadata):
     encoder = trainingMetadata.encoder
+    encoder.eval()
     decoder = trainingMetadata.decoder
+    decoder.eval()
     batchSize = trainingMetadata.batchSize
     maxLen = trainingMetadata.maxLenSentence
     embedding = trainingMetadata.embedding
