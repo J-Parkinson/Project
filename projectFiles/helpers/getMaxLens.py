@@ -5,17 +5,17 @@ from projectFiles.helpers.embeddingType import embeddingType
 def getMaxLens(dataset, embedding, restrict=2000000):
     if dataset == datasetToLoad.wikilarge:
         if embedding == embeddingType.bert:
-            length = 254
+            length = 256
         else:
             length = 82
     elif dataset == datasetToLoad.wikismall:
         if embedding == embeddingType.bert:
-            length = 230
+            length = 232
         else:
             length = 82
     else:
         if embedding == embeddingType.bert:
-            length = 84
+            length = 86
         else:
             length = 67
     return min(length, restrict)

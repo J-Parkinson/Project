@@ -2,7 +2,7 @@ from enum import Enum
 
 import numpy as np
 
-from projectFiles.preprocessing.bertEmbeddings.loadBertEmbeddingsModel import model, tokenizer
+from projectFiles.preprocessing.bertEmbeddings.loadBertEmbeddingsModel import tokenizer, embeddingOutput
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList
 
 
@@ -35,7 +35,7 @@ def bertToSentences(sentences, batchSize, manualPad=False):
     noIters = sentences.shape[0] // batchSize
     allTokenized = []
     for x in range(noIters):
-        bertResult = model.get_output_embeddings()(sentences[x * batchSize:(x + 1) * batchSize])
+        bertResult = embeddingOutput(sentences[x * batchSize:(x + 1) * batchSize])
         allTokenized += [decodedSentence.softmax(0).argmax(1).cpu().numpy() for decodedSentence in bertResult]
     return indicesBertToSentences(np.array(allTokenized), manualPad)
 

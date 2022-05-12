@@ -24,12 +24,12 @@ def simplificationDataToPyTorch(dataset, embedding, trainingCLMD, maxLen=maxLeng
 
     print("Processing dataset")
 
+    # We need to convert the imported simplificationSets into either NLTK or BERT sets depending on the embedding
+    datasetLoaded.loadFromPickleAndPadAndDeleteLong(embedding, maxLen)
+
     initialiseCurriculumLearning(datasetLoaded.train, trainingCLMD)
     initialiseCurriculumLearning(datasetLoaded.dev, curriculumLearningMetadata(curriculumLearningFlag.ordered))
     initialiseCurriculumLearning(datasetLoaded.test, curriculumLearningMetadata(curriculumLearningFlag.evaluationMode))
-
-    # We need to convert the imported simplificationSets into either NLTK or BERT sets depending on the embedding
-    datasetLoaded.loadFromPickleAndPadAndDeleteLong(embedding, maxLen)
 
     return datasetLoaded
 
