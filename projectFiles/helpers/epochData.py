@@ -101,7 +101,7 @@ class epochData:
                             fileDev.write(f"{x} {y}\n")
 
     def saveTestData(self, allData):
-        with open(f"{self.fileSaveDir}/evaluatedSentences.csv", 'wt') as file:
+        with open(f"{self.fileSaveDir}/evaluatedSentences.csv", 'w', encoding="utf-8") as file:
             spamWriter = csv.writer(file)
             spamWriter.writerow(
                 ["Original", "Prediction"] + [f"Simplified {n}" for n in range(len(allData[0]["output"]))])

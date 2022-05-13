@@ -40,7 +40,7 @@ def showPlot(x, y, title, saveLoc):
         fig, ax = plt.subplots()
         plt.plot(x, y)
         plt.title(titleName)
-        plt.xlabel("Sentence number")
+        plt.xlabel("Batch number")
         plt.ylabel("Average loss per sentence")
         plt.savefig(f"{saveLoc}/loss_{time()}.png", dpi=fig.dpi)
         plt.show()
@@ -52,7 +52,7 @@ def showPlot(x, y, title, saveLoc):
         for i in range(len(titleLegend)):
             plt.plot(x, [y1[i] for y1 in y], label=titleLegend[i])
         plt.title(titleName)
-        plt.xlabel("Sentence number")
+        plt.xlabel("Batch number")
         plt.ylabel("Average loss per sentence")
         plt.legend()
         plt.savefig(f"{saveLoc}/loss_{time()}.png", dpi=fig.dpi)

@@ -1,3 +1,4 @@
+from projectFiles.curriculumLearningFunctions.length import noTokensInInput
 from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from projectFiles.helpers.curriculumLearningFlag import curriculumLearningFlag, curriculumLearningMetadata
 from projectFiles.helpers.embeddingType import embeddingType
@@ -21,7 +22,8 @@ def runE2E(dataset, embedding, curriculumLearningMD, restrict=200000000, batches
 
 
 runE2E(datasetToLoad.wikilarge, embeddingType.bert,
-       curriculumLearningMetadata(curriculumLearningFlag.randomized), batchesBetweenValidation=75)
+       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=noTokensInInput),
+       batchesBetweenValidation=75)
 # runE2E(datasetToLoad.wikilarge, embeddingType.glove,
 #       curriculumLearningMD=curriculumLearningMetadata(curriculumLearningFlag.orderedCL, noTokensInInput))
 # runE2E(datasetToLoad.asset, embeddingType.bert,
