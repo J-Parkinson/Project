@@ -9,10 +9,8 @@ def convertSetForEmbeddingAndPaddingAndFlagLong(set, embedding, maxLenSentence):
         set.__class__ = simplificationSetBERT
     else:
         set.__class__ = simplificationSetNLTK
-    set.addMaxSentenceLen(maxLenSentence)
     set.tokenise()
     set.addIndices()
-    set.torchSet()
 
     # Remove sets with ANY too long sentences
     maxLenSentenceInSet = max([len(set.originalTokenized)] + [len(simple) for simple in set.allSimpleTokenized])

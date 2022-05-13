@@ -1,6 +1,5 @@
 from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from projectFiles.helpers.SimplificationData.SimplificationSetView import simplificationSetView
-from projectFiles.seq2seq.constants import maxLengthSentence
 
 
 class simplificationSet():
@@ -9,8 +8,6 @@ class simplificationSet():
         self.allSimple = [sent.lower() for sent in allSimple]
         self.originalTokenized = self.original
         self.allSimpleTokenized = self.allSimple
-        self.originalTokenizedPadded = self.original
-        self.allSimpleTokenizedPadded = self.allSimple
         self._removeEscapedCharacters(dataset)
         self._makeReplacementsGEC()
         self.dataset = dataset
@@ -18,9 +15,6 @@ class simplificationSet():
         self.predicted = ""
         self.originalIndices = None
         self.allSimpleIndices = None
-        self.originalTorch = None
-        self.allSimpleTorches = None
-        self.maxSentenceLen = maxLengthSentence
 
     # WikiSmall/Large escapes brackets and arrows, which we add back in
     def _removeEscapedBracketsFromSentenceWiki(self, sentence):
@@ -46,9 +40,6 @@ class simplificationSet():
     def addPredicted(self, prediction):
         self.predicted = prediction
 
-    def addMaxSentenceLen(self, maxSentenceLen):
-        self.maxSentenceLen = maxSentenceLen
-
     # Returns a list, one for each simplified sentence
     # Returning indices rather than sorting the list directly enables us to easily reverse the curriculum learning
     # process (else we would need to do original sentence matching in order to convert simplificationViews back into
@@ -63,16 +54,11 @@ class simplificationSet():
                                      self.allSimple[yIndex],
                                      self.originalTokenized,
                                      self.allSimpleTokenized[yIndex],
-                                     self.originalTokenizedPadded,
-                                     self.allSimpleTokenizedPadded[yIndex],
                                      self.dataset,
                                      self.language,
                                      self.predicted,
                                      self.originalIndices,
-                                     None if not self.allSimpleIndices else self.allSimpleIndices[yIndex],
-                                     self.originalTorch,
-                                     None if not self.allSimpleIndices else self.allSimpleTorches[yIndex],
-                                     self.maxSentenceLen)
+                                     None if not self.allSimpleIndices else self.allSimpleIndices[yIndex])
 
     def getAllViews(self):
         return [self.getView(yIndex) for yIndex in range(len(self.allSimple))]

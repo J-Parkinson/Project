@@ -22,8 +22,10 @@ def runE2E(dataset, embedding, curriculumLearningMD, restrict=200000000, batches
     # 4. Save encoder/decoder
 
 
-# To get all results I will need, I need to run all of these
+runE2E(datasetToLoad.asset, embeddingType.indices,
+       curriculumLearningMetadata(curriculumLearningFlag.randomized), batchesBetweenValidation=75, restrict=40)
 
+# To get all results I will need, I need to run all of these
 
 # Graphs 1: curricLearning sorting func
 # Baseline model
