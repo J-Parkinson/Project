@@ -6,14 +6,10 @@ from easse.quality_estimation import corpus_quality_estimation
 from easse.samsa import corpus_samsa
 from easse.sari import get_corpus_sari_operation_scores
 
-# from easse.report import write_html_report
+# Wrapper functions which handle evaluation using EASSE (and abstracts away complex optional parameters)
 
-
-def _sameSizeCreateSentenceLists(simplificationSets):
-    allOriginal = [set.originalTokenized for set in simplificationSets]
-    allSimplified = [set.allSimpleTokenized for set in simplificationSets]
-    allPredicted = [set.predicted for set in simplificationSets]
-
+# This duplicates original and predicted sentences to pair up with simplified sentences
+def _sameSizeCreateSentenceLists(allOriginal, allSimplified, allPredicted):
     originalSmeared = [[sentence for _ in range(len(simplified))] for sentence, simplified in
                        zip(allOriginal, allSimplified)]
     predictedSmeared = [[sentence for _ in range(len(simplified))] for sentence, simplified in
@@ -76,18 +72,60 @@ def calculateOtherMetrics(originalSentences, systemSentences):
     return corpus_quality_estimation(orig_sentences=originalSentences, sys_sentences=systemSentences)
 
 
-def computeAll(simplificationSets, samsa=False):
+#Calculates metrics for the validation set, stored in epochData
+def computeValidation(allOriginal, allSimplifiedSets, allPredicted):
     allResults = {}
 
-    for set in simplificationSets:
-        set.originalTokenized = " ".join(set.originalTokenized)
-        set.allSimpleTokenized = [" ".join(sentence) for sentence in set.allSimpleTokenized]
+    allSimplified = [list(token) for token in zip(*allSimplifiedSets)]
+    allSimplifiedFlat = [z for y in allSimplifiedSets for z in y]
 
-    allOriginal = [set.originalTokenized for set in simplificationSets]
-    allSimplifiedOriginal = [set.allSimpleTokenized for set in simplificationSets]
+    print("Computing FKCL")
+
+    # Flesch-Kincaid metrics
+    fkclOriginal = calculateFleschKincaid(allOriginal)
+    allResults["Flesch-Kincaid scores for original sentences"] = fkclOriginal
+    fkclSimplifiedExamples = calculateFleschKincaid(allSimplifiedFlat)
+    allResults["Flesch-Kincaid scores for simplified example sentences"] = fkclSimplifiedExamples
+    fkclPredictions = calculateFleschKincaid(allPredicted)
+    allResults["Flesch-Kincaid scores for predicted sentences"] = fkclPredictions
+
+    print("Computing BLEU")
+    # BLEU scores
+    bleuScoreOriginal = calculateBLEU(allOriginal, allSimplified)
+    allResults["BLEU score for original vs simplified sentences"] = bleuScoreOriginal
+    bleuScorePredicted = calculateBLEU(allPredicted, allSimplified)
+    allResults["BLEU score for predicted vs simplified sentences"] = bleuScorePredicted
+    bleuAverageOriginal = calculateAverageSentenceBLEU(allOriginal, allSimplified)
+    allResults["Average BLEU score for original vs simplified sentences"] = bleuAverageOriginal
+    bleuAveragePredicted = calculateAverageSentenceBLEU(allPredicted, allSimplified)
+    allResults["Average BLEU score for predicted vs simplified sentences"] = bleuAveragePredicted
+
+    print("Computing SARI")
+    # SARI scores
+    sariMacro, sariMacroAdd, sariMacroKeep, sariMacroDel = calculateSARI(allOriginal, allPredicted, allSimplified,
+                                                                         microSari=False)
+    allResults["SARI macro scores`Average/Add/Keep/Delete"] = (sariMacro, sariMacroAdd, sariMacroKeep, sariMacroDel)
+    sariMicro, sariMicroAdd, sariMicroKeep, sariMicroDel = calculateSARI(allOriginal, allPredicted, allSimplified,
+                                                                         microSari=True)
+    allResults["SARI micro scores`Average/Add/Keep/Delete"] = (sariMicro, sariMicroAdd, sariMicroKeep, sariMicroDel)
+
+    print("Computing BERTscore")
+    # BERTscore
+    bertScoreOriginal = calculateBERTScore(allOriginal, allSimplified)
+    allResults["BERTscore for original vs simplified sentences`Precision/Recall/F1"] = bertScoreOriginal
+    bertScorePredictions = calculateBERTScore(allPredicted, allSimplified)
+    allResults["BERTscore for predicted vs simplified sentences`Precision/Recall/F1"] = bertScorePredictions
+
+    return allResults
+
+
+#Evaluation function for test set
+def computeAll(allOriginal, allSimplifiedOriginal, allPredicted, samsa=False):
+    allResults = {}
+
     allSimplified = [list(token) for token in zip(*allSimplifiedOriginal)]
-    allPredicted = [set.predicted for set in simplificationSets]
-    sameSizeSimplified, sameSizeOriginal, sameSizePredicted = _sameSizeCreateSentenceLists(simplificationSets)
+    sameSizeSimplified, sameSizeOriginal, sameSizePredicted = _sameSizeCreateSentenceLists(allOriginal, allSimplified,
+                                                                                           allPredicted)
 
     constantTimePred = 1 if samsa else 0.05
     print(f"Predicted run time: {int((len(allOriginal) + len(sameSizeSimplified)) / 60 * constantTimePred)} minutes")

@@ -1,6 +1,16 @@
-def numberOfComplexWordInInput(_1, _2, inputIndices, _3):
-    return len(list(filter(lambda x: x > 5000, inputIndices)))
+from projectFiles.curriculumLearningFunctions.subtlex.loadSubtlex import checkSubtlex
 
 
-def numberOfComplexWordInInputOrOutput(_1, _2, inputIndices, outputIndices):
-    return len(list(filter(lambda x: x > 5000, inputIndices))) + len(list(filter(lambda x: x < 5000, outputIndices)))
+# Curriculum learning functions which sort by number of complex words (or sum, which takes into account both length and complexity)
+
+def numberOfComplexWordInInput(inputSentence, _2):
+    return len(list(filter(lambda x: checkSubtlex(x) > 5000, inputSentence)))
+
+
+def numberOfComplexWordInInputOrOutput(inputSentence, outputSentence):
+    return len(list(filter(lambda x: checkSubtlex(x) > 5000, inputSentence))) + len(
+        list(filter(lambda x: checkSubtlex(x) < 5000, outputSentence)))
+
+
+def sumOfIndices(inputSentence, outputSentence):
+    return sum([checkSubtlex(x) for x in inputSentence]) + sum([checkSubtlex(x) for x in outputSentence])

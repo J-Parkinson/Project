@@ -1,8 +1,11 @@
 from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from projectFiles.preprocessing.convertToPyTorch.simplificationDataToPyTorch import simplificationDataToPyTorch
 
-sizes = {datasetToLoad.asset: (19000, 1000, 3590), datasetToLoad.newsala: (133720, 3260, 2616),
+# Calculates training, development and test dataset sizes (in terms of number of simplified sentences) for each dataset
+
+sizes = {datasetToLoad.asset: (19000, 1000, 3590), datasetToLoad.newsela: (133720, 3260, 2616),
          datasetToLoad.wikismall: (88837, 205, 100), datasetToLoad.wikilarge: (296402, 992, 359)}
+
 
 def calculateTrainDevTestSizesForDataset(data, datasetName):
     # print(data.train[0]['simplified'])
@@ -22,11 +25,13 @@ def calculateTrainDevTestSizes():
     asset = simplificationDataToPyTorch(datasetToLoad.asset)
     calculateTrainDevTestSizesForDataset(asset, "asset")
 
-    newsala = simplificationDataToPyTorch(datasetToLoad.newsala)
-    calculateTrainDevTestSizesForDataset(newsala, "newsala")
+    newsela = simplificationDataToPyTorch(datasetToLoad.newsela)
+    calculateTrainDevTestSizesForDataset(newsela, "newsela")
 
     wikismall = simplificationDataToPyTorch(datasetToLoad.wikismall)
     calculateTrainDevTestSizesForDataset(wikismall, "wikiSmall")
 
     wikilarge = simplificationDataToPyTorch(datasetToLoad.wikilarge)
     calculateTrainDevTestSizesForDataset(wikilarge, "wikiLarge")
+
+# calculateTrainDevTestSizes()

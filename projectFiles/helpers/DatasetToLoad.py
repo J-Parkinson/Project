@@ -4,11 +4,12 @@ class datasetToLoad(Enum):
     asset = 0
     wikismall = 1
     wikilarge = 2
-    newsala = 3
+    newsela = 3
 
 def dsName(dataset):
-    return ["asset", "wikiSmall", "wikiLarge", "newsala"][dataset.value]
+    return ["asset", "wikiSmall", "wikiLarge", "newsela"][dataset.value]
+
 
 def name2DTL(name):
-    return [datasetToLoad.asset, datasetToLoad.wikismall, datasetToLoad.wikilarge, datasetToLoad.newsala][
-        ["asset", "wikiSmall", "wikiLarge", "newsala"].index(name)]
+    return [datasetToLoad.asset, datasetToLoad.wikismall, datasetToLoad.wikilarge, datasetToLoad.newsela][
+        ["asset", "wikiSmall", "wikiLarge", "newsela"].index(name)]

@@ -3,116 +3,199 @@ from random import random
 import torch
 from torch import optim, nn
 
+from projectFiles.evaluation.easse.calculateEASSE import computeValidation
+from projectFiles.helpers.embeddingType import embeddingType, convertDataBackToWords
 from projectFiles.helpers.epochData import epochData
 from projectFiles.helpers.epochTiming import Timer
-from projectFiles.seq2seq.constants import device, SOS, teacher_forcing_ratio, EOS, maxLengthSentence
+from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList, PAD
+from projectFiles.seq2seq.constants import device, teacher_forcing_ratio, maxLengthSentence
 
 
-def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=maxLengthSentence):
+# Batching now requires us to handle losses in a more interesting way (to deal with padding)
+def lossCriterion(embedding):
+    # We can either calculate losses ignoring tokens after EOS or not
+    # Since we ignore tokens after EOS (and padding is removed anyway) we ignore losses after EOS
+    # Hence we only compute mean over those tokens inc EOS
+    # Which EOS to pick? We pick the PREDICTED EOS as the end point
+    # a) it's always there
+    # b) no worries if EOS appears twice in decoder output
+
+    # https://pytorch.org/tutorials/beginner/chatbot_tutorial.html
+    def maskNLLLoss(inp, target, mask):
+        nTotal = mask.sum()
+        NLL = -torch.gather(inp, 1, target.view(-1, 1)).squeeze(1)
+        loss = NLL.masked_select(mask).mean()
+        loss = torch.nan_to_num(loss)
+        loss = loss.to(device)
+        return loss, nTotal.item()
+
+    def oneHotEncodingLossCriterion(output, expected, _):
+        mask = (expected != PAD)
+        output = output.squeeze()
+        loss, _ = maskNLLLoss(output, expected, mask)
+        return loss
+
+    def bertEmbeddingLossCriterion(output, expected, encodedTokenized):
+        # encodedTokenized is used here to determine padding masks
+        mask = (encodedTokenized != PAD)
+        output = output.squeeze()
+        MSE = nn.MSELoss(reduction="none")
+        loss = MSE(output, expected)
+        loss = loss.masked_select(mask).mean()
+        loss = torch.nan_to_num(loss)
+        loss = loss.to(device)
+        return loss
+
+    if embedding == embeddingType.bert:
+        return bertEmbeddingLossCriterion
+    return oneHotEncodingLossCriterion
+
+
+def train(batch, encoder_optimizer, decoder_optimizer, criterion, trainingMetadata):
+    encoder = trainingMetadata.encoder
+    encoder.train()
+    decoder = trainingMetadata.decoder
+    decoder.train()
+    batchSize = trainingMetadata.batchSize
+    maxLen = trainingMetadata.maxLenSentence
+    embedding = trainingMetadata.embedding
+    clip = trainingMetadata.clipGrad
+
     encoder_hidden = encoder.initHidden()
 
     encoder_optimizer.zero_grad()
     decoder_optimizer.zero_grad()
 
-    input_length = input_tensor.size(0)
-    target_length = target_tensor.size(0)
+    input = batch["input"]
+    output = batch["output"]
+    indicesInput = batch["indicesInput"]
+    indicesOutput = batch["indicesOutput"]
 
-    encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
+    # This module is self contained -- we should get batch sizes and lengths from outside
+
+    encoder_outputs = torch.zeros(batchSize, maxLen, encoder.hidden_size, device=device)
 
     loss = 0
 
-    for ei in range(input_length):
+    for token in range(maxLen):
         encoder_output, encoder_hidden = encoder(
-            input_tensor[ei], encoder_hidden)
-        encoder_outputs[ei] = encoder_output[0, 0]
+            input[:, token], encoder_hidden)
+        encoder_outputs[:, token] = encoder_output[:, 0]
 
-    decoder_input = torch.tensor([[SOS]], device=device)
-
+    decoder_input = input[:, 0]
     decoder_hidden = encoder_hidden
 
     use_teacher_forcing = True if random() < teacher_forcing_ratio else False
 
     if use_teacher_forcing:
         # Teacher forcing: Feed the target as the next input
-        for di in range(target_length):
+        for di in range(1, maxLen):
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, encoder_outputs)
-            loss += criterion(decoder_output, target_tensor[di])
-            decoder_input = target_tensor[di]  # Teacher forcing
+            decoder_input = output[:, di]  # Teacher forcing
+            loss += criterion(decoder_output, output[:, di], indicesOutput[:, di])
 
     else:
         # Without teacher forcing: use its own predictions as the next input
-        for di in range(target_length):
+        for di in range(1, maxLen):
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, encoder_outputs)
-            topv, topi = decoder_output.topk(1)
-            decoder_input = topi.squeeze().detach()  # detach from history as input
-
-            loss += criterion(decoder_output, target_tensor[di])
-            if decoder_input.item() == EOS:
-                break
+            loss += criterion(decoder_output, output[:, di], indicesOutput[:, di])
+            decoder_output = decoder_output.squeeze()
+            if embedding != embeddingType.bert:
+                _, decoder_output = decoder_output.topk(1)
+            decoder_input = decoder_output.detach()  # detach from history as input
 
     loss.backward()
+
+    # Clip gradients: gradients are modified in place
+    _ = nn.utils.clip_grad_norm_(encoder.parameters(), clip)
+    _ = nn.utils.clip_grad_norm_(decoder.parameters(), clip)
 
     encoder_optimizer.step()
     decoder_optimizer.step()
 
-    return loss.item() / target_length
+    if embedding == embeddingType.bert:
+        return loss.item()
+    else:
+        return loss.item() / maxLen
 
 
-def validationLoss(input_tensors, target_tensors_set, encoder, decoder, criterion, max_length=maxLengthSentence):
-    losses = []
+def validationLoss(dataLoader, criterion, trainingMetadata):
+    encoder = trainingMetadata.encoder
+    encoder.eval()
+    decoder = trainingMetadata.decoder
+    decoder.eval()
+    batchSize = trainingMetadata.batchSize
+    maxLen = trainingMetadata.maxLenSentence
+    embedding = trainingMetadata.embedding
+    batchNoGlobal = trainingMetadata.batchNoGlobal
+    resultsGlobal = trainingMetadata.results
+
+    loss = 0
+
+    # allInputs = []
+    # allOutputs = []
+    allInputIndices = []
+    allOutputIndices = []
+    allDecoderOutputs = []
+
     with torch.no_grad():
-        for input_tensor, target_tensors in zip(input_tensors, target_tensors_set):
-            for target_tensor in target_tensors:
-                encoder_hidden = encoder.initHidden()
+        for batchNo, batch in enumerate(dataLoader):
 
-                input_length = input_tensor.size(0)
-                target_length = target_tensor.size(0)
+            encoder_hidden = encoder.initHidden()
 
-                encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
+            input = batch["input"]
+            output = batch["output"]
+            # allOutputs.append(output)
+            indicesInput = batch["indicesInput"]
+            allInputIndices.append(indicesInput)
+            indicesOutput = batch["indicesOutput"]
+            allOutputIndices.append(indicesOutput)
 
-                loss = 0
+            encoder_outputs = torch.zeros(batchSize, maxLen, encoder.hidden_size, device=device)
 
-                for ei in range(input_length):
-                    encoder_output, encoder_hidden = encoder(
-                        input_tensor[ei], encoder_hidden)
-                    encoder_outputs[ei] = encoder_output[0, 0]
+            for token in range(maxLen):
+                encoder_output, encoder_hidden = encoder(
+                    input[:, token], encoder_hidden)
+                encoder_outputs[:, token] = encoder_output[:, 0]
 
-                decoder_input = torch.tensor([[SOS]], device=device)
+            decoder_input = input[:, 0]
+            decoder_outputs = []
+            decoder_hidden = encoder_hidden
 
-                decoder_hidden = encoder_hidden
+            for di in range(1, maxLen):
+                decoder_outputs.append(decoder_input)
+                decoder_output, decoder_hidden, decoder_attention = decoder(
+                    decoder_input, decoder_hidden, encoder_outputs)
+                loss += criterion(decoder_output, output[:, di], indicesOutput[:, di])
+                decoded_output = decoder_output.squeeze()
+                if embedding != embeddingType.bert:
+                    _, decoded_output = decoded_output.topk(1)
+                decoder_input = decoded_output.detach()  # detach from history as input
 
-                # We do not use teacher forcing during evaluation
-                for di in range(target_length):
-                    decoder_output, decoder_hidden, decoder_attention = decoder(
-                        decoder_input, decoder_hidden, encoder_outputs)
-                    topv, topi = decoder_output.topk(1)
-                    decoder_input = topi.squeeze().detach()  # detach from history as input
+            decoder_outputs.append(decoder_input)
 
-                    loss += criterion(decoder_output, target_tensor[di])
-                    if decoder_input.item() == EOS:
-                        break
-                losses.append(loss.item() / target_length)
-    return sum(losses) / len(losses)
+            decoder_outputs = torch.dstack(decoder_outputs)
+            allDecoderOutputs.append(decoder_outputs)
 
+    allPredicted = torch.vstack(allDecoderOutputs).detach().swapaxes(1, 2)
+    allInputIndices = torch.vstack(allInputIndices).detach()
+    allOutputIndices = torch.vstack(allOutputIndices).detach()
 
-def trainMultipleIterations(trainingMetadata=None, encoder=None, decoder=None, allData=None, datasetName=None,
-                            startIter=0):
-    if encoder and decoder and allData and datasetName:
-        trainingMetadata = epochData(encoder, decoder, allData, datasetName, startIter=startIter)
-    if not epochData:
-        raise Exception(
-            "Inadequate input -- provide either an epochData object or encoder/decoder/trainingData/datasetName")
+    allInputs, allOutputs, allPredicted = convertDataBackToWords(allInputIndices, allOutputIndices, allPredicted,
+                                                                 embedding,
+                                                                 batchSize)
+    results = computeValidation(allInputs, allOutputs, allPredicted)
 
-    while trainingMetadata.epochFinished:
-        print(f"\n\nEpoch {trainingMetadata.epochNo}:")
-        trainingMetadata = trainOneIteration(trainingMetadata)
-        trainingMetadata.startIter = 0
-        trainingMetadata.nextEpoch()
+    results["i"] = batchNoGlobal
 
-    return trainingMetadata
+    resultsGlobal.append(results)
 
+    if embedding == embeddingType.bert:
+        return loss.item() / (batchNo + 1), trainingMetadata
+    else:
+        return loss.item() / maxLen / (batchNo + 1), trainingMetadata
 
 def trainOneIteration(trainingMetadata):
     # All metadata items in trainingMetadata (epochData) are either
@@ -129,93 +212,85 @@ def trainOneIteration(trainingMetadata):
     # Local to each epoch
     encoder_optimizer = optim.SGD(trainingMetadata.encoder.parameters(), lr=trainingMetadata.learningRate)
     decoder_optimizer = optim.SGD(trainingMetadata.decoder.parameters(), lr=trainingMetadata.learningRate)
-    criterion = nn.NLLLoss()
+    criterion = lossCriterion(trainingMetadata.embedding)
 
-    iLocal = 0
-
-    trainingData = trainingMetadata.data.train
-    validationData = trainingMetadata.data.dev
+    trainingDataLoader = trainingMetadata.data.trainDL
+    devDataLoader = trainingMetadata.data.devDL
 
     plot_loss_avg = devLoss = 0
 
-    for m, pair in enumerate(trainingData):
-        if isinstance(pair, tuple):
-            targetTensorToUse = pair[1]
-            pair = pair[0]
-            target_tensors = [pair.allSimpleTorches[targetTensorToUse]]
-        else:
-            target_tensors = pair.allSimpleTorches
-        input_tensor = pair.originalTorch
+    for batchNo, batchViews in enumerate(trainingDataLoader):
+        trainingMetadata.batchNoGlobal += 1
 
-        j = 0
+        print(f"Batch {batchNo} running...")
 
-        while iLocal < trainingMetadata.startIter and j < len(target_tensors):
-            iLocal += 1
-            j += 1
+        loss = train(batchViews, encoder_optimizer, decoder_optimizer, criterion,
+                     trainingMetadata)  # .encoder, trainingMetadata.decoder,
+        # trainingMetadata.batchSize,
+        # trainingMetadata.maxLenSentence, trainingMetadata.embedding)
+        print_loss_total += loss
+        plot_loss_total += loss
 
-        if j == len(target_tensors):
-            continue
+        #######REFACTORED UP TO HERE
 
-        for k, target_tensor in enumerate(target_tensors):
-            iLocal += 1
-            trainingMetadata.iGlobal += 1
-            print(trainingMetadata.iGlobal)
+        # We split print_every and plot_every here back into two
+        # plot_every is controlled by batchNoGlobal, print_every is controlled by batchNo
 
-            if trainingMetadata.checkIfEpochShouldEnd():
-                trainingMetadata.epochFinished = False
-                return trainingMetadata
+        if trainingMetadata.batchNoGlobal % trainingMetadata.valCheckEvery == 0 and trainingMetadata.batchNoGlobal:
+            print_loss_avg = print_loss_total / trainingMetadata.valCheckEvery
+            trainingMetadata.minLoss = min(trainingMetadata.minLoss, print_loss_total)
 
-            if k < j:
-                continue
+            # Calculate validation loss
+            devLoss, trainingMetadata = validationLoss(devDataLoader, criterion, trainingMetadata)
+            trainingMetadata.minDevLoss = min(trainingMetadata.minDevLoss, devLoss)
 
-            loss = train(input_tensor, target_tensor, trainingMetadata.encoder,
-                         trainingMetadata.decoder, encoder_optimizer, decoder_optimizer, criterion)
-            print_loss_total += loss
-            plot_loss_total += loss
+            if trainingMetadata.minDevLoss == devLoss:
+                trainingMetadata.lastIterOfDevLossImp = trainingMetadata.batchNoGlobal
+                trainingMetadata.optimalEncoder = trainingMetadata.encoder.state_dict()
+                trainingMetadata.optimalDecoder = trainingMetadata.decoder.state_dict()
+                with open(f"{trainingMetadata.fileSaveDir}/epochRun.txt", "w+") as file:
+                    file.write(trainingMetadata.getAttributeStr(batchNo))
+                torch.save(trainingMetadata.optimalEncoder, f"{trainingMetadata.fileSaveDir}/encoder.pt")
+                torch.save(trainingMetadata.optimalDecoder, f"{trainingMetadata.fileSaveDir}/decoder.pt")
 
-            # We split print_every and plot_every here back into two
-            # plot_every is controlled by iGlobal, print_every is controlled by iLocal
+            print_loss_total = 0
 
-            if (trainingMetadata.iGlobal + 1) % trainingMetadata.valCheckEvery == 0:
-                if not trainingMetadata.notFirstYet:
-                    trainingMetadata.notFirstYet = True
-                else:
-                    print_loss_avg = print_loss_total / trainingMetadata.valCheckEvery
-                    trainingMetadata.minLoss = min(trainingMetadata.minLoss, print_loss_total)
+            print("_____________________")
+            print(f"Batch {batchNo + 1}")
+            timer.printTimeDiff()
+            timer.printTimeBetweenChecks()
+            print(f"Loss average: {print_loss_avg}")
+            print(
+                f"Min avg loss per {trainingMetadata.valCheckEvery} iterations: {trainingMetadata.minLoss / trainingMetadata.valCheckEvery}")
+            print(f"Validation loss: {devLoss}")
 
-                    # Calculate validation loss
-                    devLoss = validationLoss([dataVal.originalTorch for dataVal in validationData],
-                                             [dataVal.allSimpleTorches for dataVal in validationData],
-                                             trainingMetadata.encoder, trainingMetadata.decoder, criterion)
-                    trainingMetadata.minDevLoss = min(trainingMetadata.minDevLoss, devLoss)
+            plot_loss_avg = plot_loss_total / trainingMetadata.valCheckEvery
+            trainingMetadata.plot_losses.append((trainingMetadata.batchNoGlobal + 1, plot_loss_avg))
+            plot_loss_total = 0
 
-                    if trainingMetadata.minDevLoss == devLoss:
-                        trainingMetadata.lastIterOfDevLossImp = trainingMetadata.iGlobal
-                        trainingMetadata.optimalEncoder = trainingMetadata.encoder.state_dict()
-                        trainingMetadata.optimalDecoder = trainingMetadata.decoder.state_dict()
-                        with open(f"{trainingMetadata.fileSaveDir}/epochRun.txt", "w+") as file:
-                            file.write(trainingMetadata.getAttributeStr(iLocal))
-                        torch.save(trainingMetadata.optimalEncoder, f"{trainingMetadata.fileSaveDir}/encoder.pt")
-                        torch.save(trainingMetadata.optimalDecoder, f"{trainingMetadata.fileSaveDir}/decoder.pt")
+            trainingMetadata.plot_dev_losses.append((trainingMetadata.batchNoGlobal + 1, devLoss))
 
-                    print_loss_total = 0
+    trainingMetadata.plot_losses.append((trainingMetadata.batchNoGlobal + 1, plot_loss_avg))
+    trainingMetadata.plot_dev_losses.append((trainingMetadata.batchNoGlobal + 1, devLoss))
 
-                    print("_____________________")
-                    print(f"Iteration {iLocal + 1}")
-                    timer.printTimeDiff()
-                    timer.printTimeBetweenChecks()
-                    print(f"Loss average: {print_loss_avg}")
-                    print(
-                        f"Min avg loss per {trainingMetadata.valCheckEvery} iterations: {trainingMetadata.minLoss / trainingMetadata.valCheckEvery}")
-                    print(f"Validation loss: {devLoss}")
+    return trainingMetadata
 
-                    plot_loss_avg = plot_loss_total / trainingMetadata.valCheckEvery
-                    trainingMetadata.plot_losses.append((trainingMetadata.iGlobal + 1, plot_loss_avg))
-                    plot_loss_total = 0
 
-                    trainingMetadata.plot_dev_losses.append((trainingMetadata.iGlobal + 1, devLoss))
+def trainMultipleIterations(trainingMetadata=None, encoder=None, decoder=None, allData=None, datasetName=None,
+                            embedding=None, hiddenLayerWidth=None, batchSize=128, curriculumLearning=None,
+                            maxLenSentence=maxLengthSentence, noTokens=len(indicesReverseList),
+                            noEpochs=1, batchesBetweenValidation=50):
+    if encoder and decoder and allData and datasetName and embedding and curriculumLearning and hiddenLayerWidth:
+        trainingMetadata = epochData(encoder, decoder, allData, embedding, curriculumLearning, hiddenLayerWidth,
+                                     datasetName, batchSize, maxLenSentence, noTokens, noEpochs,
+                                     valCheckEvery=batchesBetweenValidation)
 
-    trainingMetadata.plot_losses.append((trainingMetadata.iGlobal + 1, plot_loss_avg))
-    trainingMetadata.plot_dev_losses.append((trainingMetadata.iGlobal + 1, devLoss))
+    if not epochData:
+        raise Exception(
+            "Inadequate input -- provide either an epochData object or encoder/decoder/trainingData/datasetName")
+
+    while trainingMetadata.nextEpoch():
+        print(f"\n\nEpoch {trainingMetadata.epochNo}:")
+        trainingMetadata = trainOneIteration(trainingMetadata)
 
     return trainingMetadata

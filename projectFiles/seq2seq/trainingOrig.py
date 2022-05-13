@@ -4,7 +4,8 @@ import torch
 from torch import optim, nn
 
 from projectFiles.helpers.epochTiming import Timer
-from projectFiles.seq2seq.constants import device, SOS, teacher_forcing_ratio, EOS, maxLengthSentence
+from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import SOS, EOS
+from projectFiles.seq2seq.constants import device, teacher_forcing_ratio, maxLengthSentence
 from projectFiles.seq2seq.plots import showPlot
 
 

@@ -13,6 +13,7 @@ def loadWikiLarge(loadPickleFile=True, pickleFile=False, isAnonymised=False):
     if loadPickleFile:
         return pickle.load(open(f"{baseLoc}/datasets/wikilarge/pickled{'ori' if not isAnonymised else ''}.p", "rb"))
 
+    print("Creating WikiLarge")
     dataset = datasetToLoad.wikilarge
     with open(f'{startLoc}.train.src', 'r', encoding='utf-8') as trainOrig:
         trainOrig = trainOrig.read().splitlines()
@@ -41,9 +42,9 @@ def loadWikiLarge(loadPickleFile=True, pickleFile=False, isAnonymised=False):
                           zip(testOrig, testSimp)]
         testPairs += setOfTestPairs
 
-    pairsTrain = simplificationDataset(trainPairs)
-    pairsDev = simplificationDataset(validPairs)
-    pairsTest = simplificationDataset(testPairs)
+    pairsTrain = simplificationDataset(trainPairs, initialiseCL=not pickleFile)
+    pairsDev = simplificationDataset(validPairs, initialiseCL=not pickleFile)
+    pairsTest = simplificationDataset(testPairs, initialiseCL=not pickleFile)
 
     dataset = simplificationDatasets(dataset, pairsTrain, pairsDev, pairsTest)
 

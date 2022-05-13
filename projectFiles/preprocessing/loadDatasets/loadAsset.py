@@ -36,9 +36,9 @@ def loadAsset(loadPickleFile=True, pickleFile=False):
             testPairs.append(testSimp)
     testSetData = list(zip(*testPairs))
     pairsTest = [simplificationSet(data[0], data[1:], dataset, language="en") for data in testSetData]
-    pairsTrain = simplificationDataset(pairsTrain)
-    pairsDev = simplificationDataset(pairsDev)
-    pairsTest = simplificationDataset(pairsTest)
+    pairsTrain = simplificationDataset(pairsTrain, initialiseCL=not pickleFile)
+    pairsDev = simplificationDataset(pairsDev, initialiseCL=not pickleFile)
+    pairsTest = simplificationDataset(pairsTest, initialiseCL=not pickleFile)
 
     dataset = simplificationDatasets(dataset, pairsTrain, pairsDev, pairsTest)
 
