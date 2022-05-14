@@ -23,7 +23,7 @@ def evaluate(trainingMetadata):
     with torch.no_grad():
         for batchNo, batch in enumerate(dataLoader):
 
-            encoder_hidden = encoder.initHidden()
+            encoderHidden = encoder.initHidden()
 
             input = batch["input"]
             indicesInput = batch["indicesInput"]
@@ -31,30 +31,30 @@ def evaluate(trainingMetadata):
             indicesOutput = batch["indicesOutput"]
             allOutputIndices.append(indicesOutput)
 
-            encoder_outputs = torch.zeros(batchSize, maxLen, encoder.hidden_size, device=device)
+            encoderOutputs = torch.zeros(batchSize, maxLen, encoder.hiddenSize, device=device)
 
             for token in range(maxLen):
-                encoder_output, encoder_hidden = encoder(
-                    input[:, token], encoder_hidden)
-                encoder_outputs[:, token] = encoder_output[:, 0]
+                encoderOutput, encoderHidden = encoder(
+                    input[:, token], encoderHidden)
+                encoderOutputs[:, token] = encoderOutput[:, 0]
 
-            decoder_input = input[:, 0]
-            decoder_outputs = []
-            decoder_hidden = encoder_hidden
+            decoderInput = input[:, 0]
+            decoderOutputs = []
+            decoderHidden = encoderHidden
 
             for di in range(1, maxLen):
-                decoder_outputs.append(decoder_input)
-                decoder_output, decoder_hidden, decoder_attention = decoder(
-                    decoder_input, decoder_hidden, encoder_outputs)
-                decoded_output = decoder_output.squeeze()
+                decoderOutputs.append(decoderInput)
+                decoderOutput, decoderHidden, decoderAttention = decoder(
+                    decoderInput, decoderHidden, encoderOutputs)
+                decodedOutput = decoderOutput.squeeze()
                 if embedding != embeddingType.bert:
-                    _, decoded_output = decoded_output.topk(1)
-                decoder_input = decoded_output.detach()  # detach from history as input
+                    _, decodedOutput = decodedOutput.topk(1)
+                decoderInput = decodedOutput.detach()  # detach from history as input
 
-            decoder_outputs.append(decoder_input)
+            decoderOutputs.append(decoderInput)
 
-            decoder_outputs = torch.dstack(decoder_outputs)
-            allDecoderOutputs.append(decoder_outputs)
+            decoderOutputs = torch.dstack(decoderOutputs)
+            allDecoderOutputs.append(decoderOutputs)
 
     allPredicted = torch.vstack(allDecoderOutputs).detach().swapaxes(1, 2)
     allInputIndices = torch.vstack(allInputIndices).detach()
@@ -69,47 +69,47 @@ def evaluate(trainingMetadata):
 
     return allData
 
-# def evaluateOld(encoder, decoder, set, embedding, max_length=maxLengthSentence):
+# def evaluateOld(encoder, decoder, set, embedding, maxLength=maxLengthSentence):
 #    with torch.no_grad():
-#        encoder_hidden = encoder.initHidden()
+#        encoderHidden = encoder.initHidden()
 #
-#        encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
+#        encoderOutputs = torch.zeros(maxLength, encoder.hiddenSize, device=device)
 #
 #        # There are two 'embeddding' layers - one here, and one inside the encoder.
 #        # This is because for indices embeddings it needs to store learnt embeddings, whilst for Bert and Glove it uses
 #        # pretrained embeddings
 #        # However, BERT needs context for the entire sentence, hence this is done here outside the input loop.
-#        input_tensor_embedding_func = inputEmbeddingLayer(embedding, encoder.input_size, encoder.hidden_size)
-#        input_tensor_embedding = input_tensor_embedding_func(set)
+#        inputTensor_embedding_func = inputEmbeddingLayer(embedding, encoder.input_size, encoder.hiddenSize)
+#        inputTensor_embedding = inputTensor_embedding_func(set)
 #
-#        input_length = input_tensor_embedding.size(0)
+#        input_length = inputTensor_embedding.size(0)
 #
 #        for ei in range(input_length):
-#            encoder_output, encoder_hidden = encoder(input_tensor_embedding[ei],
-#                                                     encoder_hidden)
-#            encoder_outputs[ei] += encoder_output[0, 0]
+#            encoderOutput, encoderHidden = encoder(inputTensor_embedding[ei],
+#                                                     encoderHidden)
+#            encoderOutputs[ei] += encoderOutput[0, 0]
 #
-#        decoder_input = torch.tensor([[SOS]], device=device)  # SOS
+#        decoderInput = torch.tensor([[SOS]], device=device)  # SOS
 #
-#        decoder_hidden = encoder_hidden
+#        decoderHidden = encoderHidden
 #
 #        decoded_words = []
-#        decoder_attentions = torch.zeros(max_length, max_length)
+#        decoderAttentions = torch.zeros(maxLength, maxLength)
 #
-#        for di in range(max_length):
-#            decoder_output, decoder_hidden, decoder_attention = decoder(
-#                decoder_input, decoder_hidden, encoder_outputs)
-#            decoder_attentions[di] = decoder_attention.data
-#            topv, topi = decoder_output.data.topk(1)
+#        for di in range(maxLength):
+#            decoderOutput, decoderHidden, decoderAttention = decoder(
+#                decoderInput, decoderHidden, encoderOutputs)
+#            decoderAttentions[di] = decoderAttention.data
+#            topv, topi = decoderOutput.data.topk(1)
 #            if topi.item() == EOS:
 #                decoded_words.append('<EOS>')
 #                break
 #            else:
 #                decoded_words.append(indicesReverseList[topi.item()])
 #
-#            decoder_input = topi.squeeze().detach()
+#            decoderInput = topi.squeeze().detach()
 #
-#        return decoded_words, decoder_attentions[:di + 1]
+#        return decoded_words, decoderAttentions[:di + 1]
 
 
 ######################################################################

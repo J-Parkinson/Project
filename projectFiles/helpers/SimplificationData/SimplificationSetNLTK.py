@@ -13,11 +13,11 @@ class simplificationSetNLTK(simplificationSet):
 
     def tokenise(self):
         if self.dataset in [datasetToLoad.wikilarge, datasetToLoad.wikismall]:
-            self.originalTokenized = self.originalTokenized.split(" ")
-            self.allSimpleTokenized = [sentence.split(" ") for sentence in self.allSimpleTokenized]
+            self.originalTokenized = self.original.split(" ")
+            self.allSimpleTokenized = [sentence.split(" ") for sentence in self.allSimple]
         else:
-            self.originalTokenized = word_tokenize(self.originalTokenized)
-            self.allSimpleTokenized = [word_tokenize(sentence) for sentence in self.allSimpleTokenized]
+            self.originalTokenized = word_tokenize(self.original)
+            self.allSimpleTokenized = [word_tokenize(sentence) for sentence in self.allSimple]
         # ADD SOS/EOS
         self.originalTokenized = self.originalTokenized + ["<eos>"]
         self.allSimpleTokenized = [sentence + ["<eos>"] for sentence in self.allSimpleTokenized]

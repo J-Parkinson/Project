@@ -7,8 +7,9 @@ from projectFiles.evaluation.easse.calculateEASSE import computeValidation
 from projectFiles.helpers.embeddingType import embeddingType, convertDataBackToWords
 from projectFiles.helpers.epochData import epochData
 from projectFiles.helpers.epochTiming import Timer
+from projectFiles.helpers.getSpecialTokens import getDecoderInput
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList, PAD
-from projectFiles.seq2seq.constants import device, teacher_forcing_ratio, maxLengthSentence
+from projectFiles.seq2seq.constants import device, maxLengthSentence
 
 
 # Batching now requires us to handle losses in a more interesting way (to deal with padding)
@@ -23,17 +24,10 @@ def lossCriterion(embedding):
     # https://pytorch.org/tutorials/beginner/chatbot_tutorial.html
     def maskNLLLoss(inp, target, mask):
         nTotal = mask.sum()
-        NLL = -torch.gather(inp, 1, target.view(-1, 1)).squeeze(1)
-        loss = NLL.masked_select(mask).mean()
-        loss = torch.nan_to_num(loss)
+        crossEntropy = -torch.log(torch.gather(inp, 1, target.view(-1, 1)).squeeze(1))
+        loss = crossEntropy.masked_select(mask).mean()
         loss = loss.to(device)
         return loss, nTotal.item()
-
-    def oneHotEncodingLossCriterion(output, expected, _):
-        mask = (expected != PAD)
-        output = output.squeeze()
-        loss, _ = maskNLLLoss(output, expected, mask)
-        return loss
 
     def bertEmbeddingLossCriterion(output, expected, encodedTokenized):
         # encodedTokenized is used here to determine padding masks
@@ -44,67 +38,70 @@ def lossCriterion(embedding):
         loss = loss.masked_select(mask).mean()
         loss = torch.nan_to_num(loss)
         loss = loss.to(device)
-        return loss
+        return loss, 1
 
     if embedding == embeddingType.bert:
         return bertEmbeddingLossCriterion
-    return oneHotEncodingLossCriterion
+    return maskNLLLoss
 
 
-def train(batch, encoder_optimizer, decoder_optimizer, criterion, trainingMetadata):
+def train(batch, encoderOptimizer, decoderOptimizer, criterion, trainingMetadata):
     encoder = trainingMetadata.encoder
     encoder.train()
     decoder = trainingMetadata.decoder
     decoder.train()
     batchSize = trainingMetadata.batchSize
-    maxLen = trainingMetadata.maxLenSentence
     embedding = trainingMetadata.embedding
     clip = trainingMetadata.clipGrad
+    teacherForcingRatio = trainingMetadata.teacherForcingRatio
 
-    encoder_hidden = encoder.initHidden()
+    encoderOptimizer.zero_grad()
+    decoderOptimizer.zero_grad()
 
-    encoder_optimizer.zero_grad()
-    decoder_optimizer.zero_grad()
-
-    input = batch["input"]
-    output = batch["output"]
-    indicesInput = batch["indicesInput"]
-    indicesOutput = batch["indicesOutput"]
-
-    # This module is self contained -- we should get batch sizes and lengths from outside
-
-    encoder_outputs = torch.zeros(batchSize, maxLen, encoder.hidden_size, device=device)
+    inputEmbeddings = batch["inputEmbeddings"]
+    outputEmbeddings = batch["outputEmbeddings"]
+    inputIndices = batch["inputIndices"]
+    outputIndices = batch["outputIndices"]
+    lengths = batch["lengths"]
+    maxSimplifiedLength = batch["maxSimplifiedLength"]
+    mask = batch["mask"]
 
     loss = 0
+    weightedLoss = 0
+    noTokensInBatch = 0
 
-    for token in range(maxLen):
-        encoder_output, encoder_hidden = encoder(
-            input[:, token], encoder_hidden)
-        encoder_outputs[:, token] = encoder_output[:, 0]
+    encoderOutputs, encoderHidden = encoder(inputEmbeddings, lengths)
 
-    decoder_input = input[:, 0]
-    decoder_hidden = encoder_hidden
+    decoderInput = getDecoderInput(embedding, batchSize)
+    decoderHidden = encoderHidden[:decoder.noLayers]
 
-    use_teacher_forcing = True if random() < teacher_forcing_ratio else False
+    useTeacherForcing = True if random() < teacherForcingRatio else False
 
-    if use_teacher_forcing:
+    if useTeacherForcing:
         # Teacher forcing: Feed the target as the next input
-        for di in range(1, maxLen):
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_outputs)
-            decoder_input = output[:, di]  # Teacher forcing
-            loss += criterion(decoder_output, output[:, di], indicesOutput[:, di])
+        for di in range(maxSimplifiedLength):
+            decoderOutput, decoderHidden, decoderAttention = decoder(
+                decoderInput, decoderHidden, encoderOutputs)
+            decoderInput = outputEmbeddings[di].view(1, -1)
+            addLoss, noTokens = criterion(decoderOutput, outputEmbeddings[di], mask[di])
+            loss += addLoss
+            weightedLoss += addLoss.item() * noTokens
+            noTokensInBatch += noTokens
 
     else:
         # Without teacher forcing: use its own predictions as the next input
-        for di in range(1, maxLen):
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_outputs)
-            loss += criterion(decoder_output, output[:, di], indicesOutput[:, di])
-            decoder_output = decoder_output.squeeze()
+        for di in range(maxSimplifiedLength):
+            decoderOutput, decoderHidden, decoderAttention = decoder(
+                decoderInput, decoderHidden, encoderOutputs)
+
             if embedding != embeddingType.bert:
-                _, decoder_output = decoder_output.topk(1)
-            decoder_input = decoder_output.detach()  # detach from history as input
+                _, topi = decoderOutput.topk(1)
+                decoderInput = torch.tensor([[topi[i][0] for i in range(batchSize)]], device=device)
+
+            addLoss, noTokens = criterion(decoderOutput, outputEmbeddings[di], mask[di])
+            loss += addLoss
+            weightedLoss += addLoss.item() * noTokens
+            noTokensInBatch += noTokens
 
     loss.backward()
 
@@ -112,13 +109,13 @@ def train(batch, encoder_optimizer, decoder_optimizer, criterion, trainingMetada
     _ = nn.utils.clip_grad_norm_(encoder.parameters(), clip)
     _ = nn.utils.clip_grad_norm_(decoder.parameters(), clip)
 
-    encoder_optimizer.step()
-    decoder_optimizer.step()
+    encoderOptimizer.step()
+    decoderOptimizer.step()
 
     if embedding == embeddingType.bert:
-        return loss.item()
+        return weightedLoss
     else:
-        return loss.item() / maxLen
+        return weightedLoss / noTokensInBatch
 
 
 def validationLoss(dataLoader, criterion, trainingMetadata):
@@ -143,7 +140,7 @@ def validationLoss(dataLoader, criterion, trainingMetadata):
     with torch.no_grad():
         for batchNo, batch in enumerate(dataLoader):
 
-            encoder_hidden = encoder.initHidden()
+            encoderHidden = encoder.initHidden()
 
             input = batch["input"]
             output = batch["output"]
@@ -153,31 +150,31 @@ def validationLoss(dataLoader, criterion, trainingMetadata):
             indicesOutput = batch["indicesOutput"]
             allOutputIndices.append(indicesOutput)
 
-            encoder_outputs = torch.zeros(batchSize, maxLen, encoder.hidden_size, device=device)
+            encoderOutputs = torch.zeros(batchSize, maxLen, encoder.hiddenSize, device=device)
 
             for token in range(maxLen):
-                encoder_output, encoder_hidden = encoder(
-                    input[:, token], encoder_hidden)
-                encoder_outputs[:, token] = encoder_output[:, 0]
+                encoderOutput, encoderHidden = encoder(
+                    input[:, token], encoderHidden)
+                encoderOutputs[:, token] = encoderOutput[:, 0]
 
-            decoder_input = input[:, 0]
-            decoder_outputs = []
-            decoder_hidden = encoder_hidden
+            decoderInput = input[:, 0]
+            decoderOutputs = []
+            decoderHidden = encoderHidden
 
             for di in range(1, maxLen):
-                decoder_outputs.append(decoder_input)
-                decoder_output, decoder_hidden, decoder_attention = decoder(
-                    decoder_input, decoder_hidden, encoder_outputs)
-                loss += criterion(decoder_output, output[:, di], indicesOutput[:, di])
-                decoded_output = decoder_output.squeeze()
+                decoderOutputs.append(decoderInput)
+                decoderOutput, decoderHidden, decoderAttention = decoder(
+                    decoderInput, decoderHidden, encoderOutputs)
+                loss += criterion(decoderOutput, output[:, di], indicesOutput[:, di])
+                decodedOutput = decoderOutput.squeeze()
                 if embedding != embeddingType.bert:
-                    _, decoded_output = decoded_output.topk(1)
-                decoder_input = decoded_output.detach()  # detach from history as input
+                    _, decodedOutput = decodedOutput.topk(1)
+                decoderInput = decodedOutput.detach()  # detach from history as input
 
-            decoder_outputs.append(decoder_input)
+            decoderOutputs.append(decoderInput)
 
-            decoder_outputs = torch.dstack(decoder_outputs)
-            allDecoderOutputs.append(decoder_outputs)
+            decoderOutputs = torch.dstack(decoderOutputs)
+            allDecoderOutputs.append(decoderOutputs)
 
     allPredicted = torch.vstack(allDecoderOutputs).detach().swapaxes(1, 2)
     allInputIndices = torch.vstack(allInputIndices).detach()
@@ -206,12 +203,13 @@ def trainOneIteration(trainingMetadata):
     timer = Timer()
 
     # Local to each epoch, need not be saved
-    print_loss_total = 0  # Reset every print_every
+    printLossTotal = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
 
     # Local to each epoch
-    encoder_optimizer = optim.SGD(trainingMetadata.encoder.parameters(), lr=trainingMetadata.learningRate)
-    decoder_optimizer = optim.SGD(trainingMetadata.decoder.parameters(), lr=trainingMetadata.learningRate)
+    encoderOptimizer = optim.Adam(trainingMetadata.encoder.parameters(), lr=trainingMetadata.learningRate)
+    decoderOptimizer = optim.Adam(trainingMetadata.decoder.parameters(), lr=trainingMetadata.learningRate
+                                                                            * trainingMetadata.decoderMultiplier)
     criterion = lossCriterion(trainingMetadata.embedding)
 
     trainingDataLoader = trainingMetadata.data.trainDL
@@ -222,13 +220,13 @@ def trainOneIteration(trainingMetadata):
     for batchNo, batchViews in enumerate(trainingDataLoader):
         trainingMetadata.batchNoGlobal += 1
 
-        print(f"Batch {batchNo} running...")
+        print(f"Batch {batchNo + 1} running...")
 
-        loss = train(batchViews, encoder_optimizer, decoder_optimizer, criterion,
+        loss = train(batchViews, encoderOptimizer, decoderOptimizer, criterion,
                      trainingMetadata)  # .encoder, trainingMetadata.decoder,
         # trainingMetadata.batchSize,
         # trainingMetadata.maxLenSentence, trainingMetadata.embedding)
-        print_loss_total += loss
+        printLossTotal += loss
         plot_loss_total += loss
 
         #######REFACTORED UP TO HERE
@@ -237,8 +235,8 @@ def trainOneIteration(trainingMetadata):
         # plot_every is controlled by batchNoGlobal, print_every is controlled by batchNo
 
         if trainingMetadata.batchNoGlobal % trainingMetadata.valCheckEvery == 0 and trainingMetadata.batchNoGlobal:
-            print_loss_avg = print_loss_total / trainingMetadata.valCheckEvery
-            trainingMetadata.minLoss = min(trainingMetadata.minLoss, print_loss_total)
+            printLossAvg = printLossTotal / trainingMetadata.valCheckEvery
+            trainingMetadata.minLoss = min(trainingMetadata.minLoss, printLossTotal)
 
             # Calculate validation loss
             devLoss, trainingMetadata = validationLoss(devDataLoader, criterion, trainingMetadata)
@@ -253,25 +251,25 @@ def trainOneIteration(trainingMetadata):
                 torch.save(trainingMetadata.optimalEncoder, f"{trainingMetadata.fileSaveDir}/encoder.pt")
                 torch.save(trainingMetadata.optimalDecoder, f"{trainingMetadata.fileSaveDir}/decoder.pt")
 
-            print_loss_total = 0
+            printLossTotal = 0
 
             print("_____________________")
             print(f"Batch {batchNo + 1}")
             timer.printTimeDiff()
             timer.printTimeBetweenChecks()
-            print(f"Loss average: {print_loss_avg}")
+            print(f"Loss average: {printLossAvg}")
             print(
                 f"Min avg loss per {trainingMetadata.valCheckEvery} iterations: {trainingMetadata.minLoss / trainingMetadata.valCheckEvery}")
             print(f"Validation loss: {devLoss}")
 
             plot_loss_avg = plot_loss_total / trainingMetadata.valCheckEvery
-            trainingMetadata.plot_losses.append((trainingMetadata.batchNoGlobal + 1, plot_loss_avg))
+            trainingMetadata.plotLosses.append((trainingMetadata.batchNoGlobal + 1, plot_loss_avg))
             plot_loss_total = 0
 
-            trainingMetadata.plot_dev_losses.append((trainingMetadata.batchNoGlobal + 1, devLoss))
+            trainingMetadata.plotDevLosses.append((trainingMetadata.batchNoGlobal + 1, devLoss))
 
-    trainingMetadata.plot_losses.append((trainingMetadata.batchNoGlobal + 1, plot_loss_avg))
-    trainingMetadata.plot_dev_losses.append((trainingMetadata.batchNoGlobal + 1, devLoss))
+    trainingMetadata.plotLosses.append((trainingMetadata.batchNoGlobal + 1, plot_loss_avg))
+    trainingMetadata.plotDevLosses.append((trainingMetadata.batchNoGlobal + 1, devLoss))
 
     return trainingMetadata
 

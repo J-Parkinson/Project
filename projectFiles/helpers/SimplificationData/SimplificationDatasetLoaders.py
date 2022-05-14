@@ -38,7 +38,7 @@ class simplificationDatasetLoader():
 
     def convertToInputEmbeddingBERT(self, views):
         allOriginalTokenized, _1 = self._convertToInputEmbeddingPreprocessing(views)
-        lengths = torch.tensor([len(view.originalTokenized) for view in views], dtype=torch.int, device="cpu")
+        lengths = torch.tensor([len(view) for view in allOriginalTokenized], dtype=torch.int, device="cpu")
         allOriginalPadded = self._padSentences(allOriginalTokenized, "[PAD]")
         allOriginalPaddedTorch = torch.tensor(allOriginalPadded, device=device, dtype=torch.long)
         allOriginalPaddedSwap = allOriginalPadded.swapaxes(0, 1)
@@ -47,8 +47,8 @@ class simplificationDatasetLoader():
         return embeddings, lengths, allOriginalPaddedTorch
 
     def convertToInputEmbeddingIndicesGlove(self, views):
-        _1, allOriginalIndices = self._convertToInputEmbeddingPreprocessing(views)
-        lengths = torch.tensor([len(view.originalTokenized) for view in views], dtype=torch.int, device="cpu")
+        allOriginalTokenized, allOriginalIndices = self._convertToInputEmbeddingPreprocessing(views)
+        lengths = torch.tensor([len(view) for view in allOriginalTokenized], dtype=torch.int, device="cpu")
         allOriginalPadded = self._padSentences(allOriginalIndices, PAD)
         allOriginalTorch = torch.tensor(allOriginalPadded, device=device, dtype=torch.long)
         return allOriginalTorch, lengths
@@ -57,7 +57,7 @@ class simplificationDatasetLoader():
         allSimpleTokenized, _1 = self._convertToOutputEmbeddingPreprocessing(views)
         maxSimplifiedLength = max([len(view.simpleTokenized) for view in views])
         allSimplePadded = self._padSentences(allSimpleTokenized, "[PAD]")
-        mask = torch.tensor(allSimplePadded == "[PAD]", dtype=torch.bool)
+        mask = torch.tensor(allSimplePadded != "[PAD]", dtype=torch.bool)
         allSimplePaddedTorch = torch.tensor(allSimplePadded, device=device, dtype=torch.long)
         allSimplePaddedSwap = allSimplePadded.swapaxes(0, 1)
         allSimpleTorch = torch.tensor(allSimplePaddedSwap, device=device, dtype=torch.long)
@@ -65,10 +65,10 @@ class simplificationDatasetLoader():
         return embeddings, mask, maxSimplifiedLength, allSimplePaddedTorch
 
     def convertToOutputEmbeddingIndicesGlove(self, views):
-        _1, allSimpleIndices = self._convertToOutputEmbeddingPreprocessing(views)
-        maxSimplifiedLength = max([len(view.simpleTokenized) for view in views])
+        allSimpleTokenized, allSimpleIndices = self._convertToOutputEmbeddingPreprocessing(views)
+        maxSimplifiedLength = max([len(view) for view in allSimpleTokenized])
         allSimplePadded = self._padSentences(allSimpleIndices, PAD)
-        mask = torch.tensor(allSimplePadded == PAD, dtype=torch.bool)
+        mask = torch.tensor(allSimplePadded != PAD, dtype=torch.bool, device=device)
         allSimpleTorch = torch.tensor(allSimplePadded, device=device, dtype=torch.long)
         return allSimpleTorch, mask, maxSimplifiedLength
 
@@ -84,7 +84,7 @@ class simplificationDatasetLoader():
             outputIndices = outputEmbeddings
 
         return {"inputEmbeddings": inputEmbeddings,
-                "outputEmbedddings": outputEmbeddings,
+                "outputEmbeddings": outputEmbeddings,
                 "inputIndices": inputIndices,
                 "outputIndices": outputIndices,
                 "lengths": lengths,

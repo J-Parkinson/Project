@@ -10,16 +10,16 @@ class simplificationSetBERT(simplificationSet):
         self.addIndices()
 
     def tokenise(self):
-        self.originalTokenized = tokenizer.tokenize(self.originalTokenized)
-        self.allSimpleTokenized = [tokenizer.tokenize(sentence) for sentence in self.allSimpleTokenized]
+        self.originalTokenized = tokenizer.tokenize(self.original)[1:]
+        self.allSimpleTokenized = [tokenizer.tokenize(sentence)[1:] for sentence in self.allSimple]
 
     def addIndices(self):
         self.originalIndices = tokenizer.encode_plus(self.original,
                                                      return_attention_mask=False,
                                                      return_token_type_ids=False,
-                                                     add_special_tokens=True)["input_ids"]
+                                                     add_special_tokens=True)["input_ids"][1:]
         self.allSimpleIndices = [tokenizer.encode_plus(sentence,
                                                        return_attention_mask=False,
                                                        return_token_type_ids=False,
-                                                       add_special_tokens=True)["input_ids"]
+                                                       add_special_tokens=True)["input_ids"][1:]
                                  for sentence in self.allSimple]

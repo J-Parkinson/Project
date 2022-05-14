@@ -5,7 +5,6 @@ import torch
 noIndices = 253401
 noIndicesPlusTags = noIndices + 3
 maxLengthSentence = 414
-teacher_forcing_ratio = 0.5
 gloveWidth = 300
 bertWidth = 768
 

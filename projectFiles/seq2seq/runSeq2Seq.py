@@ -5,13 +5,14 @@ from projectFiles.helpers.getMaxLens import getMaxLens
 from projectFiles.preprocessing.convertToPyTorch.simplificationDataToPyTorch import simplificationDataToPyTorch
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList
 from projectFiles.seq2seq.constants import device
-from projectFiles.seq2seq.seq2seqModel import EncoderRNN, AttnDecoderRNN
+from projectFiles.seq2seq.decoderModel import AttnDecoderRNN
+from projectFiles.seq2seq.encoderModel import EncoderRNN
 from projectFiles.seq2seq.training import trainMultipleIterations
 
 
-def runSeq2Seq(dataset, embedding, curriculumLearningMD, hiddenLayerWidthForIndices=256, restrict=200000000,
+def runSeq2Seq(dataset, embedding, curriculumLearningMD, hiddenLayerWidthForIndices=512, restrict=200000000,
                batchSize=64, batchesBetweenValidation=50):
-    hiddenLayerWidth = getHiddenSize(hiddenLayerWidthForIndices, embedding)
+    hiddenSize = getHiddenSize(hiddenLayerWidthForIndices, embedding)
 
     maxLenSentence = getMaxLens(dataset, embedding, restrict=restrict)
 
@@ -23,15 +24,17 @@ def runSeq2Seq(dataset, embedding, curriculumLearningMD, hiddenLayerWidthForIndi
     datasetBatches = simplificationDatasetLoader(datasetLoaded, embedding, batch_size=batchSize)
 
     print("Creating encoder and decoder")
-    encoder = EncoderRNN(len(indicesReverseList), hiddenLayerWidth, embedding, batchSize).to(device)
-    decoder = AttnDecoderRNN(hiddenLayerWidth, len(indicesReverseList), embedding, batchSize, dropout=0.3,
-                             max_length=maxLenSentence).to(device)
+    print(f"No indices: {len(indicesReverseList)}")
+    embeddingTokenSize = len(indicesReverseList)
+    encoder = EncoderRNN(embeddingTokenSize, hiddenSize, embedding, batchSize).to(device)
+    decoder = AttnDecoderRNN(hiddenSize, embeddingTokenSize, embedding, noLayers=2, dropout=0.1,
+                             maxLength=maxLenSentence).to(device)
 
     print("Begin iterations")
     epochData = trainMultipleIterations(encoder=encoder, decoder=decoder, allData=datasetBatches,
                                         datasetName=dsName(dataset), embedding=embedding, batchSize=batchSize,
-                                        hiddenLayerWidth=hiddenLayerWidth, curriculumLearning=curriculumLearningMD.flag,
+                                        hiddenLayerWidth=hiddenSize, curriculumLearning=curriculumLearningMD.flag,
                                         maxLenSentence=maxLenSentence,
-                                        noTokens=len(indicesReverseList),
+                                        noTokens=embeddingTokenSize,
                                         batchesBetweenValidation=batchesBetweenValidation)
     return epochData

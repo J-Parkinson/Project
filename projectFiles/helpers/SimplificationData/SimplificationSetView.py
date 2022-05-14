@@ -3,7 +3,7 @@
 
 class simplificationSetView():
     def __init__(self, original, simple, originalTokenized, simpleTokenized, dataset, language, predicted,
-                 originalIndices, simpleIndices, maxSentenceLen):
+                 originalIndices, simpleIndices):
         self.original = original
         self.simple = simple
         self.originalTokenized = originalTokenized
@@ -13,7 +13,6 @@ class simplificationSetView():
         self.predicted = predicted
         self.originalIndices = originalIndices
         self.simpleIndices = simpleIndices
-        self.maxSentenceLen = maxSentenceLen
 
     def addPredicted(self, prediction):
         self.predicted = prediction

@@ -12,14 +12,14 @@ from projectFiles.seq2seq.plots import showPlot
 class epochData:
     def __init__(self, encoder, decoder, data, embedding, curriculumLearning, hiddenLayerWidth, datasetName="",
                  batchSize=128, maxLenSentence=maxLengthSentence, noTokens=len(indicesReverseList),
-                 noEpochs=1, locationToSaveTo="seq2seq/trainedModels/", learningRate=0.01,
-                 timer=Timer(), plot_losses=None, plot_dev_losses=None, minLoss=999999999, minDevLoss=999999999,
+                 noEpochs=1, locationToSaveTo="seq2seq/trainedModels/", learningRate=0.0003,
+                 timer=Timer(), plotLosses=None, plotDevLosses=None, minLoss=999999999, minDevLoss=999999999,
                  lastIterOfDevLossImp=0, optimalEncoder=None, optimalDecoder=None, fileSaveDir=None, iGlobal=0,
-                 valCheckEvery=50, clipGrad=50):
-        if plot_dev_losses is None:
-            plot_dev_losses = []
-        if plot_losses is None:
-            plot_losses = []
+                 valCheckEvery=50, clipGrad=50, decoderMultiplier=5, teacherForcingRatio=0.75):
+        if plotDevLosses is None:
+            plotDevLosses = []
+        if plotLosses is None:
+            plotLosses = []
         if not fileSaveDir:
             fileSaveDir = f"{projectLoc}/{locationToSaveTo}{datasetName}_CL-{curriculumLearning.name}_{embedding.name}_{timer.getStartTime().replace(':', '')}"
         os.mkdir(fileSaveDir)
@@ -31,8 +31,8 @@ class epochData:
         self.locationToSaveTo = locationToSaveTo
         self.learningRate = learningRate
         self.timer = timer
-        self.plot_losses = plot_losses
-        self.plot_dev_losses = plot_dev_losses
+        self.plotLosses = plotLosses
+        self.plotDevLosses = plotDevLosses
         self.minLoss = minLoss
         self.minDevLoss = minDevLoss
         self.lastIterOfDevLossImp = lastIterOfDevLossImp
@@ -50,6 +50,8 @@ class epochData:
         self.noTokens = noTokens
         self.clipGrad = clipGrad
         self.noEpochs = noEpochs
+        self.decoderMultiplier = decoderMultiplier
+        self.teacherForcingRatio = teacherForcingRatio
 
     def nextEpoch(self):
         self.epochNo += 1
@@ -57,10 +59,10 @@ class epochData:
 
     def printPlots(self):
         print("Making plots")
-        showPlot(*list(zip(*self.plot_losses)),
+        showPlot(*list(zip(*self.plotLosses)),
                  f"Training set losses for {self.datasetName} {'using' if self.curriculumLearning.value else 'without'} curriculum learning",
                  self.fileSaveDir)
-        showPlot(*list(zip(*self.plot_dev_losses)),
+        showPlot(*list(zip(*self.plotDevLosses)),
                  f"Development set losses for {self.datasetName} {'using' if self.curriculumLearning.value else 'without'} curriculum learning",
                  self.fileSaveDir)
 
@@ -74,11 +76,11 @@ class epochData:
 
     def savePlotData(self):
         with open(f"{self.fileSaveDir}/plotData.txt", "w+") as file:
-            for x, y in self.plot_losses:
+            for x, y in self.plotLosses:
                 file.write(f"{x} {y}\n")
 
         with open(f"{self.fileSaveDir}/plotDataDev.txt", "w+") as fileDev:
-            for x, y in self.plot_dev_losses:
+            for x, y in self.plotDevLosses:
                 fileDev.write(f"{x} {y}\n")
 
         if len(self.results) > 0:
