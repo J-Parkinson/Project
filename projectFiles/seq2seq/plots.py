@@ -2,7 +2,7 @@ from time import time
 
 from matplotlib import pyplot as plt, ticker
 
-from projectFiles.seq2seq.evaluate import evaluate
+from projectFiles.deprecated.evaluate import evaluate
 
 
 def showAttention(input_sentence, output_words, attentions):
@@ -35,6 +35,7 @@ def evaluateAndShowAttention(encoder, decoder, inputSentence):
 def showPlot(x, y, title, saveLoc):
     title = title.split("`")
     titleName = title[0]
+    print(titleName)
     if len(title) == 1:
         plt.figure()
         fig, ax = plt.subplots()

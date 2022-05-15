@@ -1,8 +1,9 @@
+from projectFiles.helpers.DatasetSplits import datasetSplits
 from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from projectFiles.helpers.curriculumLearningFlag import curriculumLearningFlag, curriculumLearningMetadata
 from projectFiles.helpers.embeddingType import embeddingType
-from projectFiles.seq2seq.evaluate import evaluate
 from projectFiles.seq2seq.runSeq2Seq import runSeq2Seq
+from projectFiles.seq2seq.training import validationEvaluationLoss
 
 BESTONE = None
 
@@ -12,7 +13,7 @@ def runE2E(dataset, embedding, curriculumLearningMD, restrict=200000000, batches
                            batchesBetweenValidation=batchesBetweenValidation)
     epochData.printPlots()
     epochData.savePlotData()
-    allData = evaluate(epochData)
+    allData = validationEvaluationLoss(epochData, datasetSplits.test)
     epochData.saveTestData(allData)
     epochData.evaluateEASSE(allData)
 
@@ -22,8 +23,8 @@ def runE2E(dataset, embedding, curriculumLearningMD, restrict=200000000, batches
     # 4. Save encoder/decoder
 
 
-runE2E(datasetToLoad.asset, embeddingType.glove,
-       curriculumLearningMetadata(curriculumLearningFlag.randomized), batchesBetweenValidation=75, restrict=40)
+# runE2E(datasetToLoad.asset, embeddingType.glove,
+#       curriculumLearningMetadata(curriculumLearningFlag.randomized), batchesBetweenValidation=75, restrict=40)
 
 # To get all results I will need, I need to run all of these
 

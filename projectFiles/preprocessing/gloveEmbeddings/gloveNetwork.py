@@ -21,4 +21,4 @@ class GloveEmbeddings(nn.Module):
         self.embeddingLayer = getGloveEmbeddingNN(noTokens, embeddingSize)
 
     def forward(self, input):
-        return self.embeddingLayer(input.squeeze())
+        return self.embeddingLayer(input)

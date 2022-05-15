@@ -7,6 +7,7 @@ from projectFiles.seq2seq.constants import device
 # from projectFiles.seq2seq.deprecated.loadEncoderDecoder import loadEncoderDecoder, loadDataForEncoderDecoder
 
 def evaluate(trainingMetadata):
+    print("Evaluation ---------------------------------------")
     dataLoader = trainingMetadata.data.testDL
     encoder = trainingMetadata.encoder
     encoder.eval()

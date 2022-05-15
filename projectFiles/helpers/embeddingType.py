@@ -26,7 +26,7 @@ def indicesBertToSentences(sentences, manualPad=False):
 
 def indicesNLTKToSentences(sentences):
     words = np.array(indicesReverseList)
-    sentencesTokenized = words[sentences.cpu().numpy()]
+    sentencesTokenized = [words[sentence] for sentence in sentences]
     sentenceNoPadding = [" ".join(sentence).split("<eos>")[0] + "<eos>" for sentence in sentencesTokenized]
     return sentenceNoPadding
 
@@ -41,30 +41,28 @@ def bertToSentences(sentences, batchSize, manualPad=False):
 
 
 # input: numpy array
-def convertDataBackToWords(allInputIndices, allOutputIndices, allPredicted, embedding, batchSize):
+def convertDataBackToWords(allInputIndices, allOutputIndices, allPredicted, embedding):
     # This function first pairs the same inputs / predicteds with all simplifieds
 
     if embedding == embeddingType.bert:
-        allInputIndicesSentenced = indicesBertToSentences(allInputIndices.squeeze())
-        allOutputIndicesSentenced = indicesBertToSentences(allOutputIndices.squeeze())
-        allPredictedSentenced = bertToSentences(allPredicted.squeeze(), batchSize, manualPad=True)
+        allInputIndicesSentenced = indicesBertToSentences(allInputIndices)
+        allOutputIndicesSentenced = indicesBertToSentences(allOutputIndices)
+        allPredictedSentenced = bertToSentences(allPredicted, 64, manualPad=True)
     else:
-        allInputIndicesSentenced = indicesNLTKToSentences(allInputIndices.squeeze())
-        allOutputIndicesSentenced = indicesNLTKToSentences(allOutputIndices.squeeze())
-        allPredictedSentenced = indicesNLTKToSentences(allPredicted.squeeze())
+        allInputIndicesSentenced = indicesNLTKToSentences(allInputIndices)
+        allOutputIndicesSentenced = indicesNLTKToSentences(allOutputIndices)
+        allPredictedSentenced = indicesNLTKToSentences(allPredicted)
 
-    allPredictedSentenced = allPredictedSentenced[:len(allInputIndicesSentenced)]
-
-    inputSentenceNo = [0]
-    for a in range(len(allInputIndicesSentenced) - 1):
-        inputSentenceNo += [inputSentenceNo[-1] + int(allInputIndicesSentenced[a] != allInputIndicesSentenced[a + 1])]
-
-    returnType = [{"input": "", "output": [], "predicted": []} for _ in range(inputSentenceNo[-1] + 1)]
-    for inp, out, pred, sentNo in zip(allInputIndicesSentenced, allOutputIndicesSentenced, allPredictedSentenced,
-                                      inputSentenceNo):
-        returnType[sentNo]["input"] = inp
-        returnType[sentNo]["output"].append(out)
-        returnType[sentNo]["predicted"].append(pred)
+    returnType = []
+    for inp, out, pred in zip(allInputIndicesSentenced, allOutputIndicesSentenced, allPredictedSentenced):
+        found = False
+        for i in range(len(returnType)):
+            if returnType[i]["input"] == inp:
+                returnType[i]["output"].append(out)
+                found = True
+                break
+        if not found:
+            returnType.append({"input": inp, "output": [out], "predicted": pred})
 
     allInputs = [d["input"] for d in returnType]
     allOutputs = [d["output"] for d in returnType]

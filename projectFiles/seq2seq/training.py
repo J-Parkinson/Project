@@ -4,6 +4,7 @@ import torch
 from torch import optim, nn
 
 from projectFiles.evaluation.easse.calculateEASSE import computeValidation
+from projectFiles.helpers.DatasetSplits import datasetSplits
 from projectFiles.helpers.embeddingType import embeddingType, convertDataBackToWords
 from projectFiles.helpers.epochData import epochData
 from projectFiles.helpers.epochTiming import Timer
@@ -112,24 +113,29 @@ def train(batch, encoderOptimizer, decoderOptimizer, criterion, trainingMetadata
     encoderOptimizer.step()
     decoderOptimizer.step()
 
+    print(f"Training loss: {weightedLoss}")
+
     if embedding == embeddingType.bert:
         return weightedLoss
     else:
         return weightedLoss / noTokensInBatch
 
 
-def validationLoss(dataLoader, criterion, trainingMetadata):
+def validationEvaluationLoss(trainingMetadata, mode, criterion=None, dataLoader=None):
+    dataLoader = dataLoader or trainingMetadata.data.testDL
+    print(f"{'Validation' if mode == datasetSplits.dev else 'Evaluation'} calculating----------------------------")
     encoder = trainingMetadata.encoder
     encoder.eval()
     decoder = trainingMetadata.decoder
     decoder.eval()
     batchSize = trainingMetadata.batchSize
-    maxLen = trainingMetadata.maxLenSentence
     embedding = trainingMetadata.embedding
     batchNoGlobal = trainingMetadata.batchNoGlobal
     resultsGlobal = trainingMetadata.results
 
     loss = 0
+    allWeightedLosses = 0
+    noTokensInDevSet = 0
 
     # allInputs = []
     # allOutputs = []
@@ -139,60 +145,74 @@ def validationLoss(dataLoader, criterion, trainingMetadata):
 
     with torch.no_grad():
         for batchNo, batch in enumerate(dataLoader):
+            inputEmbeddings = batch["inputEmbeddings"]
+            outputEmbeddings = batch["outputEmbeddings"]
+            inputIndices = batch["inputIndices"]
+            allInputIndices.append(inputIndices)
+            outputIndices = batch["outputIndices"]
+            allOutputIndices.append(outputIndices)
+            lengths = batch["lengths"]
+            maxSimplifiedLength = batch["maxSimplifiedLength"]
+            mask = batch["mask"]
 
-            encoderHidden = encoder.initHidden()
+            encoderOutputs, encoderHidden = encoder(inputEmbeddings, lengths)
 
-            input = batch["input"]
-            output = batch["output"]
-            # allOutputs.append(output)
-            indicesInput = batch["indicesInput"]
-            allInputIndices.append(indicesInput)
-            indicesOutput = batch["indicesOutput"]
-            allOutputIndices.append(indicesOutput)
-
-            encoderOutputs = torch.zeros(batchSize, maxLen, encoder.hiddenSize, device=device)
-
-            for token in range(maxLen):
-                encoderOutput, encoderHidden = encoder(
-                    input[:, token], encoderHidden)
-                encoderOutputs[:, token] = encoderOutput[:, 0]
-
-            decoderInput = input[:, 0]
             decoderOutputs = []
-            decoderHidden = encoderHidden
+            decoderInput = getDecoderInput(embedding, batchSize)
+            decoderHidden = encoderHidden[:decoder.noLayers]
 
-            for di in range(1, maxLen):
-                decoderOutputs.append(decoderInput)
+            noTokensInBatch = 0
+            weightedLoss = 0
+
+            for di in range(maxSimplifiedLength):
                 decoderOutput, decoderHidden, decoderAttention = decoder(
                     decoderInput, decoderHidden, encoderOutputs)
-                loss += criterion(decoderOutput, output[:, di], indicesOutput[:, di])
-                decodedOutput = decoderOutput.squeeze()
+
                 if embedding != embeddingType.bert:
-                    _, decodedOutput = decodedOutput.topk(1)
-                decoderInput = decodedOutput.detach()  # detach from history as input
+                    _, topi = decoderOutput.topk(1)
+                    decoderInput = torch.tensor([[topi[i][0] for i in range(batchSize)]], device=device)
 
-            decoderOutputs.append(decoderInput)
+                decoderOutputs.append(decoderInput)
 
-            decoderOutputs = torch.dstack(decoderOutputs)
+                if mode == datasetSplits.dev:
+                    addLoss, noTokens = criterion(decoderOutput, outputEmbeddings[di], mask[di])
+                    loss += addLoss
+                    weightedLoss += addLoss.item() * noTokens
+                    noTokensInBatch += noTokens
+
+            decoderOutputs = torch.vstack(decoderOutputs).swapaxes(0, 1)
             allDecoderOutputs.append(decoderOutputs)
+            if mode == datasetSplits.dev:
+                allWeightedLosses += weightedLoss
+                noTokensInDevSet += noTokensInBatch
 
-    allPredicted = torch.vstack(allDecoderOutputs).detach().swapaxes(1, 2)
-    allInputIndices = torch.vstack(allInputIndices).detach()
-    allOutputIndices = torch.vstack(allOutputIndices).detach()
+    allPredicted = [sentence.cpu().detach().numpy() for batch in allDecoderOutputs for sentence in batch]
+    allInputIndices = [batch.swapaxes(0, 1) for batch in allInputIndices]
+    allInputIndices = [sentence.cpu().detach().numpy() for batch in allInputIndices for sentence in batch]
+    allOutputIndices = [batch.swapaxes(0, 1) for batch in allOutputIndices]
+    allOutputIndices = [sentence.cpu().detach().numpy() for batch in allOutputIndices for sentence in batch]
 
     allInputs, allOutputs, allPredicted = convertDataBackToWords(allInputIndices, allOutputIndices, allPredicted,
-                                                                 embedding,
-                                                                 batchSize)
-    results = computeValidation(allInputs, allOutputs, allPredicted)
+                                                                 embedding)
 
-    results["i"] = batchNoGlobal
+    if mode == datasetSplits.dev:
+        results = computeValidation(allInputs, allOutputs, allPredicted)
 
-    resultsGlobal.append(results)
+        results["i"] = batchNoGlobal
 
-    if embedding == embeddingType.bert:
-        return loss.item() / (batchNo + 1), trainingMetadata
+        resultsGlobal.append(results)
+
+        print("Validation calculated-----------------------------")
+
+        if embedding == embeddingType.bert:
+            return allWeightedLosses, trainingMetadata
+        else:
+            return allWeightedLosses / noTokensInDevSet, trainingMetadata
     else:
-        return loss.item() / maxLen / (batchNo + 1), trainingMetadata
+        allData = [{"input": inp, "output": out, "predicted": pred} for inp, out, pred in
+                   zip(allInputs, allOutputs, allPredicted)]
+
+        return allData
 
 def trainOneIteration(trainingMetadata):
     # All metadata items in trainingMetadata (epochData) are either
@@ -234,12 +254,13 @@ def trainOneIteration(trainingMetadata):
         # We split print_every and plot_every here back into two
         # plot_every is controlled by batchNoGlobal, print_every is controlled by batchNo
 
-        if trainingMetadata.batchNoGlobal % trainingMetadata.valCheckEvery == 0 and trainingMetadata.batchNoGlobal:
+        if trainingMetadata.batchNoGlobal % trainingMetadata.valCheckEvery == 0:
             printLossAvg = printLossTotal / trainingMetadata.valCheckEvery
             trainingMetadata.minLoss = min(trainingMetadata.minLoss, printLossTotal)
 
             # Calculate validation loss
-            devLoss, trainingMetadata = validationLoss(devDataLoader, criterion, trainingMetadata)
+            devLoss, trainingMetadata = validationEvaluationLoss(trainingMetadata, datasetSplits.dev, criterion,
+                                                                 devDataLoader)
             trainingMetadata.minDevLoss = min(trainingMetadata.minDevLoss, devLoss)
 
             if trainingMetadata.minDevLoss == devLoss:
