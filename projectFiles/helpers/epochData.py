@@ -15,7 +15,7 @@ class epochData:
                  noEpochs=1, locationToSaveTo="seq2seq/trainedModels/", learningRate=0.0003,
                  timer=Timer(), plotLosses=None, plotDevLosses=None, minLoss=999999999, minDevLoss=999999999,
                  lastIterOfDevLossImp=0, optimalEncoder=None, optimalDecoder=None, fileSaveDir=None, iGlobal=0,
-                 valCheckEvery=50, clipGrad=50, decoderMultiplier=5, teacherForcingRatio=0.75):
+                 valCheckEvery=50, clipGrad=50, decoderMultiplier=5, teacherForcingRatio=0.95):
         if plotDevLosses is None:
             plotDevLosses = []
         if plotLosses is None:

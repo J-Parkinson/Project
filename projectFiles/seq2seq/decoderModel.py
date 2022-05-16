@@ -25,10 +25,8 @@ class AttnDecoderRNN(nn.Module):
 
         if embeddingVersion == embeddingType.indices:
             self.embeddingLayer = nn.Embedding(self.embeddingTokenSize, self.hiddenSize)
-        elif embeddingVersion == embeddingType.glove:
-            self.embeddingLayer = GloveEmbeddings(embeddingTokenSize)
         else:
-            self.embeddingLayer = lambda x: x
+            self.embeddingLayer = GloveEmbeddings(embeddingTokenSize)
 
         self.attention = AttentionModel(hiddenSize)
         self.dropoutLayer = nn.Dropout(self.dropout)
@@ -47,6 +45,5 @@ class AttnDecoderRNN(nn.Module):
         context = context.squeeze(1)
         concatGruContext = torch.cat((gruOutput, context), 1)
         output = torch.tanh(self.concat(concatGruContext))
-        if self.embeddingVersion != embeddingType.bert:
-            output = F.softmax(self.out(output), dim=1)
+        output = F.softmax(self.out(output), dim=1)
         return output, hidden, attentionWeights

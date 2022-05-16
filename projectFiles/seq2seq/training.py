@@ -5,48 +5,23 @@ from torch import optim, nn
 
 from projectFiles.evaluation.easse.calculateEASSE import computeValidation
 from projectFiles.helpers.DatasetSplits import datasetSplits
-from projectFiles.helpers.embeddingType import embeddingType, convertDataBackToWords
+from projectFiles.helpers.embeddingType import convertDataBackToWords
 from projectFiles.helpers.epochData import epochData
 from projectFiles.helpers.epochTiming import Timer
 from projectFiles.helpers.getSpecialTokens import getDecoderInput
-from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList, PAD
+from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList
 from projectFiles.seq2seq.constants import device, maxLengthSentence
 
 
-# Batching now requires us to handle losses in a more interesting way (to deal with padding)
-def lossCriterion(embedding):
-    # We can either calculate losses ignoring tokens after EOS or not
-    # Since we ignore tokens after EOS (and padding is removed anyway) we ignore losses after EOS
-    # Hence we only compute mean over those tokens inc EOS
-    # Which EOS to pick? We pick the PREDICTED EOS as the end point
-    # a) it's always there
-    # b) no worries if EOS appears twice in decoder output
-
-    # https://pytorch.org/tutorials/beginner/chatbot_tutorial.html
-    def maskNLLLoss(inp, target, mask):
-        nTotal = mask.sum()
-        crossEntropy = -torch.log(torch.gather(inp, 1, target.view(-1, 1)).squeeze(1))
-        loss = crossEntropy.masked_select(mask).mean()
-        loss = loss.to(device)
-        return loss, nTotal.item()
-
-    def bertEmbeddingLossCriterion(output, expected, encodedTokenized):
-        # encodedTokenized is used here to determine padding masks
-        mask = (encodedTokenized != PAD)
-        output = output.squeeze()
-        MSE = nn.MSELoss(reduction="none")
-        loss = MSE(output, expected)
-        loss = loss.masked_select(mask).mean()
-        loss = torch.nan_to_num(loss)
-        loss = loss.to(device)
-        return loss, 1
-
-    if embedding == embeddingType.bert:
-        return bertEmbeddingLossCriterion
-    return maskNLLLoss
+def maskNLLLoss(inp, target, mask):
+    nTotal = mask.sum()
+    crossEntropy = -torch.log(torch.gather(inp, 1, target.view(-1, 1)).squeeze(1))
+    loss = crossEntropy.masked_select(mask).mean()
+    loss = loss.to(device)
+    return loss, nTotal.item()
 
 
-def train(batch, encoderOptimizer, decoderOptimizer, criterion, trainingMetadata):
+def train(batch, encoderOptimizer, decoderOptimizer, trainingMetadata):
     encoder = trainingMetadata.encoder
     encoder.train()
     decoder = trainingMetadata.decoder
@@ -73,7 +48,7 @@ def train(batch, encoderOptimizer, decoderOptimizer, criterion, trainingMetadata
 
     encoderOutputs, encoderHidden = encoder(inputEmbeddings, lengths)
 
-    decoderInput = getDecoderInput(embedding, batchSize)
+    decoderInput = getDecoderInput(batchSize)
     decoderHidden = encoderHidden[:decoder.noLayers]
 
     useTeacherForcing = True if random() < teacherForcingRatio else False
@@ -84,7 +59,7 @@ def train(batch, encoderOptimizer, decoderOptimizer, criterion, trainingMetadata
             decoderOutput, decoderHidden, decoderAttention = decoder(
                 decoderInput, decoderHidden, encoderOutputs)
             decoderInput = outputEmbeddings[di].view(1, -1)
-            addLoss, noTokens = criterion(decoderOutput, outputEmbeddings[di], mask[di])
+            addLoss, noTokens = maskNLLLoss(decoderOutput, outputEmbeddings[di], mask[di])
             loss += addLoss
             weightedLoss += addLoss.item() * noTokens
             noTokensInBatch += noTokens
@@ -95,11 +70,10 @@ def train(batch, encoderOptimizer, decoderOptimizer, criterion, trainingMetadata
             decoderOutput, decoderHidden, decoderAttention = decoder(
                 decoderInput, decoderHidden, encoderOutputs)
 
-            if embedding != embeddingType.bert:
-                _, topi = decoderOutput.topk(1)
-                decoderInput = torch.tensor([[topi[i][0] for i in range(batchSize)]], device=device)
+            _, topi = decoderOutput.topk(1)
+            decoderInput = torch.tensor([[topi[i][0] for i in range(batchSize)]], device=device)
 
-            addLoss, noTokens = criterion(decoderOutput, outputEmbeddings[di], mask[di])
+            addLoss, noTokens = maskNLLLoss(decoderOutput, outputEmbeddings[di], mask[di])
             loss += addLoss
             weightedLoss += addLoss.item() * noTokens
             noTokensInBatch += noTokens
@@ -113,15 +87,12 @@ def train(batch, encoderOptimizer, decoderOptimizer, criterion, trainingMetadata
     encoderOptimizer.step()
     decoderOptimizer.step()
 
-    print(f"Training loss: {weightedLoss}")
+    print(f"Training loss: {weightedLoss / noTokensInBatch}")
 
-    if embedding == embeddingType.bert:
-        return weightedLoss
-    else:
-        return weightedLoss / noTokensInBatch
+    return weightedLoss / noTokensInBatch
 
 
-def validationEvaluationLoss(trainingMetadata, mode, criterion=None, dataLoader=None):
+def validationEvaluationLoss(trainingMetadata, mode, dataLoader=None):
     dataLoader = dataLoader or trainingMetadata.data.testDL
     print(f"{'Validation' if mode == datasetSplits.dev else 'Evaluation'} calculating----------------------------")
     encoder = trainingMetadata.encoder
@@ -158,7 +129,7 @@ def validationEvaluationLoss(trainingMetadata, mode, criterion=None, dataLoader=
             encoderOutputs, encoderHidden = encoder(inputEmbeddings, lengths)
 
             decoderOutputs = []
-            decoderInput = getDecoderInput(embedding, batchSize)
+            decoderInput = getDecoderInput(batchSize)
             decoderHidden = encoderHidden[:decoder.noLayers]
 
             noTokensInBatch = 0
@@ -168,14 +139,13 @@ def validationEvaluationLoss(trainingMetadata, mode, criterion=None, dataLoader=
                 decoderOutput, decoderHidden, decoderAttention = decoder(
                     decoderInput, decoderHidden, encoderOutputs)
 
-                if embedding != embeddingType.bert:
-                    _, topi = decoderOutput.topk(1)
-                    decoderInput = torch.tensor([[topi[i][0] for i in range(batchSize)]], device=device)
+                _, topi = decoderOutput.topk(1)
+                decoderInput = torch.tensor([[topi[i][0] for i in range(batchSize)]], device=device)
 
                 decoderOutputs.append(decoderInput)
 
                 if mode == datasetSplits.dev:
-                    addLoss, noTokens = criterion(decoderOutput, outputEmbeddings[di], mask[di])
+                    addLoss, noTokens = maskNLLLoss(decoderOutput, outputEmbeddings[di], mask[di])
                     loss += addLoss
                     weightedLoss += addLoss.item() * noTokens
                     noTokensInBatch += noTokens
@@ -204,10 +174,7 @@ def validationEvaluationLoss(trainingMetadata, mode, criterion=None, dataLoader=
 
         print("Validation calculated-----------------------------")
 
-        if embedding == embeddingType.bert:
-            return allWeightedLosses, trainingMetadata
-        else:
-            return allWeightedLosses / noTokensInDevSet, trainingMetadata
+        return allWeightedLosses / noTokensInDevSet, trainingMetadata
     else:
         allData = [{"input": inp, "output": out, "predicted": pred} for inp, out, pred in
                    zip(allInputs, allOutputs, allPredicted)]
@@ -224,43 +191,52 @@ def trainOneIteration(trainingMetadata):
 
     # Local to each epoch, need not be saved
     printLossTotal = 0  # Reset every print_every
-    plot_loss_total = 0  # Reset every plot_every
+    plotLossTotal = 0  # Reset every plot_every
 
     # Local to each epoch
     encoderOptimizer = optim.Adam(trainingMetadata.encoder.parameters(), lr=trainingMetadata.learningRate)
     decoderOptimizer = optim.Adam(trainingMetadata.decoder.parameters(), lr=trainingMetadata.learningRate
                                                                             * trainingMetadata.decoderMultiplier)
-    criterion = lossCriterion(trainingMetadata.embedding)
+
+    # If you have cuda, configure cuda to call
+    for state in encoderOptimizer.state.values():
+        for k, v in state.items():
+            if isinstance(v, torch.Tensor):
+                state[k] = v.cuda()
+
+    for state in decoderOptimizer.state.values():
+        for k, v in state.items():
+            if isinstance(v, torch.Tensor):
+                state[k] = v.cuda()
 
     trainingDataLoader = trainingMetadata.data.trainDL
     devDataLoader = trainingMetadata.data.devDL
 
-    plot_loss_avg = devLoss = 0
+    plotLossAverage = devLoss = 0
 
     for batchNo, batchViews in enumerate(trainingDataLoader):
         trainingMetadata.batchNoGlobal += 1
 
         print(f"Batch {batchNo + 1} running...")
 
-        loss = train(batchViews, encoderOptimizer, decoderOptimizer, criterion,
+        loss = train(batchViews, encoderOptimizer, decoderOptimizer,
                      trainingMetadata)  # .encoder, trainingMetadata.decoder,
         # trainingMetadata.batchSize,
         # trainingMetadata.maxLenSentence, trainingMetadata.embedding)
         printLossTotal += loss
-        plot_loss_total += loss
+        plotLossTotal += loss
 
         #######REFACTORED UP TO HERE
 
         # We split print_every and plot_every here back into two
         # plot_every is controlled by batchNoGlobal, print_every is controlled by batchNo
 
-        if trainingMetadata.batchNoGlobal % trainingMetadata.valCheckEvery == 0:
+        if trainingMetadata.batchNoGlobal % trainingMetadata.valCheckEvery == 0 and False:
             printLossAvg = printLossTotal / trainingMetadata.valCheckEvery
             trainingMetadata.minLoss = min(trainingMetadata.minLoss, printLossTotal)
 
             # Calculate validation loss
-            devLoss, trainingMetadata = validationEvaluationLoss(trainingMetadata, datasetSplits.dev, criterion,
-                                                                 devDataLoader)
+            devLoss, trainingMetadata = validationEvaluationLoss(trainingMetadata, datasetSplits.dev, devDataLoader)
             trainingMetadata.minDevLoss = min(trainingMetadata.minDevLoss, devLoss)
 
             if trainingMetadata.minDevLoss == devLoss:
@@ -283,13 +259,13 @@ def trainOneIteration(trainingMetadata):
                 f"Min avg loss per {trainingMetadata.valCheckEvery} iterations: {trainingMetadata.minLoss / trainingMetadata.valCheckEvery}")
             print(f"Validation loss: {devLoss}")
 
-            plot_loss_avg = plot_loss_total / trainingMetadata.valCheckEvery
-            trainingMetadata.plotLosses.append((trainingMetadata.batchNoGlobal + 1, plot_loss_avg))
-            plot_loss_total = 0
+            plotLossAverage = plotLossTotal / trainingMetadata.valCheckEvery
+            trainingMetadata.plotLosses.append((trainingMetadata.batchNoGlobal + 1, plotLossAverage))
+            plotLossTotal = 0
 
             trainingMetadata.plotDevLosses.append((trainingMetadata.batchNoGlobal + 1, devLoss))
 
-    trainingMetadata.plotLosses.append((trainingMetadata.batchNoGlobal + 1, plot_loss_avg))
+    trainingMetadata.plotLosses.append((trainingMetadata.batchNoGlobal + 1, plotLossAverage))
     trainingMetadata.plotDevLosses.append((trainingMetadata.batchNoGlobal + 1, devLoss))
 
     return trainingMetadata
@@ -309,7 +285,7 @@ def trainMultipleIterations(trainingMetadata=None, encoder=None, decoder=None, a
             "Inadequate input -- provide either an epochData object or encoder/decoder/trainingData/datasetName")
 
     while trainingMetadata.nextEpoch():
-        print(f"\n\nEpoch {trainingMetadata.epochNo}:")
+        print(f"\n\nEpoch {trainingMetadata.epochNo}:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:_:")
         trainingMetadata = trainOneIteration(trainingMetadata)
 
     return trainingMetadata

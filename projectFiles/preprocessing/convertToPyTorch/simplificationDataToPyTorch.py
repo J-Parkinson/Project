@@ -8,7 +8,9 @@ from projectFiles.seq2seq.constants import maxLengthSentence
 from projectFiles.seq2seq.initialiseCurriculumLearning import initialiseCurriculumLearning
 
 
-def simplificationDataToPyTorch(dataset, embedding, trainingCLMD, maxLen=maxLengthSentence):
+def simplificationDataToPyTorch(dataset, embedding,
+                                trainingCLMD=curriculumLearningMetadata(curriculumLearningFlag.ordered),
+                                maxLen=maxLengthSentence, minOccurences=2):
     if dataset == datasetToLoad.asset:
         print("Loading ASSET")
         datasetLoaded = loadAsset()
@@ -24,8 +26,11 @@ def simplificationDataToPyTorch(dataset, embedding, trainingCLMD, maxLen=maxLeng
 
     print("Processing dataset")
 
-    # We need to convert the imported simplificationSets into either NLTK or BERT sets depending on the embedding
-    datasetLoaded.loadFromPickleAndPadAndDeleteLong(embedding, maxLen)
+    # We need to convert the imported simplificationSets into NLTK embeddings (hold out from also having BERT here)
+    datasetLoaded.loadFromPickleAndPadAndDeleteLongUncommon(embedding, maxLen, minOccurences)
+
+    # Now we have removed sentences from our datasets we can recalculate indices
+    datasetLoaded.reIndex()
 
     initialiseCurriculumLearning(datasetLoaded.train, trainingCLMD)
     initialiseCurriculumLearning(datasetLoaded.dev, curriculumLearningMetadata(curriculumLearningFlag.ordered))

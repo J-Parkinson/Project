@@ -8,13 +8,13 @@ from projectFiles.preprocessing.convertToPyTorch.simplificationDataToPyTorch imp
 
 # Calculates the lengths of sentences in each dataset and plots a graph of this (perhaps for writeup if needed)
 
-# newsela = simplificationDataToPyTorch(datasetToLoad.newsela, embeddingType.bert)
+# newsela = simplificationDataToPyTorch(datasetToLoad.newsela, embeddingType.glove)
 # print("newsela")
-# wikismall = simplificationDataToPyTorch(datasetToLoad.wikismall, embeddingType.bert)
+# wikismall = simplificationDataToPyTorch(datasetToLoad.wikismall, embeddingType.glove)
 # print("wikismall")
-# wikilarge = simplificationDataToPyTorch(datasetToLoad.wikilarge, embeddingType.bert)
+# wikilarge = simplificationDataToPyTorch(datasetToLoad.wikilarge, embeddingType.glove)
 # print("wikilarge")
-asset = simplificationDataToPyTorch(datasetToLoad.asset, embeddingType.bert)
+asset = simplificationDataToPyTorch(datasetToLoad.asset, embeddingType.glove)
 print("asset")
 
 datasets = [asset.train, asset.dev, asset.test]

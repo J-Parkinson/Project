@@ -5,9 +5,6 @@ from projectFiles.helpers.embeddingType import embeddingType
 from projectFiles.seq2seq.runSeq2Seq import runSeq2Seq
 from projectFiles.seq2seq.training import validationEvaluationLoss
 
-BESTONE = None
-
-
 def runE2E(dataset, embedding, curriculumLearningMD, restrict=200000000, batchesBetweenValidation=50):
     epochData = runSeq2Seq(dataset, embedding, curriculumLearningMD, restrict=restrict,
                            batchesBetweenValidation=batchesBetweenValidation)
@@ -30,40 +27,38 @@ def runE2E(dataset, embedding, curriculumLearningMD, restrict=200000000, batches
 
 # Graphs 1: curricLearning sorting func
 # Baseline model
-runE2E(datasetToLoad.wikilarge, embeddingType.bert,
+runE2E(datasetToLoad.wikilarge, embeddingType.glove,
        curriculumLearningMetadata(curriculumLearningFlag.randomized), batchesBetweenValidation=75)
 # Different sorting funcs
-# runE2E(datasetToLoad.wikilarge, embeddingType.bert,
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
 #       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=numberOfComplexWordInInput), batchesBetweenValidation=75)
-# runE2E(datasetToLoad.wikilarge, embeddingType.bert,
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
 #       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=noTokensInInput), batchesBetweenValidation=75)
-# runE2E(datasetToLoad.wikilarge, embeddingType.bert,
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
 #       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=differenceInLengthOfInputAndOutput), batchesBetweenValidation=75)
-# runE2E(datasetToLoad.wikilarge, embeddingType.bert,
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
 #       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=differenceInFK), batchesBetweenValidation=75)
-# runE2E(datasetToLoad.wikilarge, embeddingType.bert,
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
 #       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=fleschKincaidInput), batchesBetweenValidation=75)
-# runE2E(datasetToLoad.wikilarge, embeddingType.bert,
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
 #       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=bertScore), batchesBetweenValidation=75)
 #
 #
 ##Different curriculum schedules (inc. active learning)
-# runE2E(datasetToLoad.wikilarge, embeddingType.bert,
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
 #       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=BESTONE), batchesBetweenValidation=75)
-# runE2E(datasetToLoad.wikilarge, embeddingType.bert,
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
 #       curriculumLearningMetadata(curriculumLearningFlag.sampledFlatCL, lambdaFunc=BESTONE), batchesBetweenValidation=75)
-# runE2E(datasetToLoad.wikilarge, embeddingType.bert,
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
 #       curriculumLearningMetadata(curriculumLearningFlag.sampledPriorityCL, lambdaFunc=BESTONE), batchesBetweenValidation=75)
 #
 #
 ##impact on simpler embeddings
-# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
-#       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=BESTONE), batchesBetweenValidation=75)
 # runE2E(datasetToLoad.wikilarge, embeddingType.indices,
 #       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=BESTONE), batchesBetweenValidation=75)
 #
 ##impact on smaller datasets
-# runE2E(datasetToLoad.asset, embeddingType.bert,
+# runE2E(datasetToLoad.asset, embeddingType.glove,
 #       curriculumLearningMetadata(curriculumLearningFlag.randomized), batchesBetweenValidation=75)
-# runE2E(datasetToLoad.asset, embeddingType.bert,
+# runE2E(datasetToLoad.asset, embeddingType.glove,
 #       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=BESTONE), batchesBetweenValidation=75)

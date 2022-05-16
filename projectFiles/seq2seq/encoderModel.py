@@ -8,13 +8,12 @@ from projectFiles.seq2seq.constants import device
 
 class EncoderRNN(nn.Module):
 
-    def __init__(self, embeddingTokenSize, hiddenSize, embedding, batchSize, noLayers=2, dropout=0.1):
+    def __init__(self, embeddingTokenSize, hiddenSize, embedding, noLayers=2, dropout=0.1):
         # print(input_size)
         super(EncoderRNN, self).__init__()
         self.n_layers = noLayers
         self.hiddenSize = hiddenSize
         self.embeddingTokenSize = embeddingTokenSize
-        self.batchSize = batchSize
         self.embedding = embedding
 
         self.gru = nn.GRU(hiddenSize, hiddenSize, noLayers,

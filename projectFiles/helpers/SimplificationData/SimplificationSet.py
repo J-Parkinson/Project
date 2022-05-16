@@ -1,3 +1,5 @@
+from unidecode import unidecode
+
 from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from projectFiles.helpers.SimplificationData.SimplificationSetView import simplificationSetView
 
@@ -6,13 +8,17 @@ class simplificationSet():
     def __init__(self, original, allSimple, dataset, language="en"):
         self.original = original.lower()
         self.allSimple = [sent.lower() for sent in allSimple]
-        self.originalTokenized = self.original
-        self.allSimpleTokenized = self.allSimple
         self._removeEscapedCharacters(dataset)
         self._makeReplacementsGEC()
+        self._toAscii()
+
+        self.originalTokenized = self.original
+        self.allSimpleTokenized = self.allSimple
+
         self.dataset = dataset
         self.language = language
         self.predicted = ""
+
         self.originalIndices = None
         self.allSimpleIndices = None
 
@@ -26,15 +32,19 @@ class simplificationSet():
     # Gector (what another text simplification model is based on) suggests replacing these strings in the text
     def _makeReplacementsGEC(self):
         for (frm, to) in [("''", '"'), ("--", "-"), ("`", "'")]:
-            self.originalTokenized = self.originalTokenized.replace(frm, to)
-            self.allSimpleTokenized = [sentence.replace(frm, to) for sentence in self.allSimpleTokenized]
+            self.original = self.original.replace(frm, to)
+            self.allSimple = [sentence.replace(frm, to) for sentence in self.allSimple]
 
-    #Run before tokenisation
+    def _toAscii(self):
+        self.original = unidecode(self.original.lower().strip())
+        self.allSimple = [unidecode(sent.lower().strip()) for sent in self.allSimple]
+
+    # Run before tokenisation
     def _removeEscapedCharacters(self, dataset):
         if dataset in [datasetToLoad.wikilarge, datasetToLoad.wikismall]:
-            self.originalTokenized = self._removeEscapedBracketsFromSentenceWiki(self.originalTokenized)
-            self.allSimpleTokenized = [self._removeEscapedBracketsFromSentenceWiki(sentence) for sentence in
-                                       self.allSimpleTokenized]
+            self.original = self._removeEscapedBracketsFromSentenceWiki(self.original)
+            self.allSimple = [self._removeEscapedBracketsFromSentenceWiki(sentence) for sentence in
+                              self.allSimple]
         return
 
     def addPredicted(self, prediction):

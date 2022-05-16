@@ -4,6 +4,7 @@ class curriculumLearningFlag(Enum):
     evaluationMode = -1
     ordered = 0
     randomized = 1
+    sampled = 2
     orderedCL = 2
     sampledFlatCL = 3
     sampledPriorityCL = 4

@@ -11,13 +11,15 @@ from projectFiles.seq2seq.training import trainMultipleIterations
 
 
 def runSeq2Seq(dataset, embedding, curriculumLearningMD, hiddenLayerWidthForIndices=512, restrict=200000000,
-               batchSize=64, batchesBetweenValidation=50):
+               batchSize=64, batchesBetweenValidation=50, minNoOccurencesForToken=2, encoderNoLayers=2,
+               decoderNoLayers=2, dropout=0.1):
     hiddenSize = getHiddenSize(hiddenLayerWidthForIndices, embedding)
 
     maxLenSentence = getMaxLens(dataset, embedding, restrict=restrict)
 
     # Also restricts length of max len sentence in each set (1-n and 1-1)
-    datasetLoaded = simplificationDataToPyTorch(dataset, embedding, curriculumLearningMD, maxLen=maxLenSentence)
+    datasetLoaded = simplificationDataToPyTorch(dataset, embedding, curriculumLearningMD, maxLen=maxLenSentence,
+                                                minOccurences=minNoOccurencesForToken)
     print("Dataset loaded")
 
     # batching
@@ -26,8 +28,9 @@ def runSeq2Seq(dataset, embedding, curriculumLearningMD, hiddenLayerWidthForIndi
     print("Creating encoder and decoder")
     print(f"No indices: {len(indicesReverseList)}")
     embeddingTokenSize = len(indicesReverseList)
-    encoder = EncoderRNN(embeddingTokenSize, hiddenSize, embedding, batchSize).to(device)
-    decoder = AttnDecoderRNN(hiddenSize, embeddingTokenSize, embedding, noLayers=2, dropout=0.1,
+    encoder = EncoderRNN(embeddingTokenSize, hiddenSize, embedding, noLayers=encoderNoLayers, dropout=dropout).to(
+        device)
+    decoder = AttnDecoderRNN(hiddenSize, embeddingTokenSize, embedding, noLayers=decoderNoLayers, dropout=dropout,
                              maxLength=maxLenSentence).to(device)
 
     print("Begin iterations")

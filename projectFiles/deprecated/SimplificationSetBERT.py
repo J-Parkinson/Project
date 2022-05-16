@@ -1,5 +1,7 @@
+from projectFiles.deprecated.bertEmbeddings.loadBertEmbeddingsModel import tokenizer
 from projectFiles.helpers.SimplificationData import simplificationSet
-from projectFiles.preprocessing.bertEmbeddings.loadBertEmbeddingsModel import tokenizer
+
+
 # Note that S0S == [PAD] in BERT tokenizer, but we never pad sentences so this is reused from the NLTK code as is
 
 

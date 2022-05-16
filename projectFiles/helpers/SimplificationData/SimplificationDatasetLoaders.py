@@ -4,8 +4,6 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from projectFiles.helpers.embeddingType import embeddingType
-from projectFiles.preprocessing.bertEmbeddings.loadBertEmbeddingsModel import model as BERTmodel
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import PAD
 from projectFiles.seq2seq.constants import device
 
@@ -36,33 +34,12 @@ class simplificationDatasetLoader():
         allSimpleIndices = [view.simpleIndices for view in views]
         return allSimpleTokenized, allSimpleIndices
 
-    def convertToInputEmbeddingBERT(self, views):
-        allOriginalTokenized, _1 = self._convertToInputEmbeddingPreprocessing(views)
-        lengths = torch.tensor([len(view) for view in allOriginalTokenized], dtype=torch.int, device="cpu")
-        allOriginalPadded = self._padSentences(allOriginalTokenized, "[PAD]")
-        allOriginalPaddedTorch = torch.tensor(allOriginalPadded, device=device, dtype=torch.long)
-        allOriginalPaddedSwap = allOriginalPadded.swapaxes(0, 1)
-        allOriginalTorch = torch.tensor(allOriginalPaddedSwap, device=device, dtype=torch.long)
-        embeddings = BERTmodel.get_input_embeddings()(allOriginalTorch).swapaxes(0, 1)
-        return embeddings, lengths, allOriginalPaddedTorch
-
     def convertToInputEmbeddingIndicesGlove(self, views):
         allOriginalTokenized, allOriginalIndices = self._convertToInputEmbeddingPreprocessing(views)
         lengths = torch.tensor([len(view) for view in allOriginalTokenized], dtype=torch.int, device="cpu")
         allOriginalPadded = self._padSentences(allOriginalIndices, PAD)
         allOriginalTorch = torch.tensor(allOriginalPadded, device=device, dtype=torch.long)
         return allOriginalTorch, lengths
-
-    def convertToOutputEmbeddingBERT(self, views):
-        allSimpleTokenized, _1 = self._convertToOutputEmbeddingPreprocessing(views)
-        maxSimplifiedLength = max([len(view.simpleTokenized) for view in views])
-        allSimplePadded = self._padSentences(allSimpleTokenized, "[PAD]")
-        mask = torch.tensor(allSimplePadded != "[PAD]", dtype=torch.bool)
-        allSimplePaddedTorch = torch.tensor(allSimplePadded, device=device, dtype=torch.long)
-        allSimplePaddedSwap = allSimplePadded.swapaxes(0, 1)
-        allSimpleTorch = torch.tensor(allSimplePaddedSwap, device=device, dtype=torch.long)
-        embeddings = BERTmodel.get_input_embeddings()(allSimpleTorch).swapaxes(0, 1)
-        return embeddings, mask, maxSimplifiedLength, allSimplePaddedTorch
 
     def convertToOutputEmbeddingIndicesGlove(self, views):
         allSimpleTokenized, allSimpleIndices = self._convertToOutputEmbeddingPreprocessing(views)
@@ -74,14 +51,10 @@ class simplificationDatasetLoader():
 
     def _collateFunction(self, views):
         views.sort(key=lambda view: len(view.originalTokenized), reverse=True)
-        if self.embedding == embeddingType.bert:
-            inputEmbeddings, lengths, inputIndices = self.convertToInputEmbeddingBERT(views)
-            outputEmbeddings, mask, maxSimplifiedLength, outputIndices = self.convertToOutputEmbeddingBERT(views)
-        else:
-            inputEmbeddings, lengths = self.convertToInputEmbeddingIndicesGlove(views)
-            inputIndices = inputEmbeddings
-            outputEmbeddings, mask, maxSimplifiedLength = self.convertToOutputEmbeddingIndicesGlove(views)
-            outputIndices = outputEmbeddings
+        inputEmbeddings, lengths = self.convertToInputEmbeddingIndicesGlove(views)
+        inputIndices = inputEmbeddings
+        outputEmbeddings, mask, maxSimplifiedLength = self.convertToOutputEmbeddingIndicesGlove(views)
+        outputIndices = outputEmbeddings
 
         return {"inputEmbeddings": inputEmbeddings,
                 "outputEmbeddings": outputEmbeddings,

@@ -87,6 +87,8 @@ class simplificationDataset(Dataset):
                 (xIndex, yIndex) = self.curriculumLearningIndices[self._samplePriority()]
             elif self.curriculumLearning == curriculumLearningFlag.sampledFlatCL:
                 (xIndex, yIndex) = self.curriculumLearningIndices[self._sampleFlat()]
+            elif self.curriculumLearning == curriculumLearningFlag.sampled:
+                (xIndex, yIndex) = random.choice(self.curriculumLearningIndices)
             else:
                 (xIndex, yIndex) = self.curriculumLearningIndices[idx]
             return self.dataset[xIndex].getView(yIndex)

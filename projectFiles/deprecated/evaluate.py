@@ -1,6 +1,6 @@
 import torch
 
-from projectFiles.helpers.embeddingType import embeddingType, convertDataBackToWords
+from projectFiles.helpers.embeddingType import convertDataBackToWords
 from projectFiles.seq2seq.constants import device
 
 
@@ -48,8 +48,7 @@ def evaluate(trainingMetadata):
                 decoderOutput, decoderHidden, decoderAttention = decoder(
                     decoderInput, decoderHidden, encoderOutputs)
                 decodedOutput = decoderOutput.squeeze()
-                if embedding != embeddingType.bert:
-                    _, decodedOutput = decodedOutput.topk(1)
+                _, decodedOutput = decodedOutput.topk(1)
                 decoderInput = decodedOutput.detach()  # detach from history as input
 
             decoderOutputs.append(decoderInput)
