@@ -16,7 +16,7 @@ def indicesNLTKToSentences(sentences):
     return sentenceNoPadding
 
 # input: numpy array
-def convertDataBackToWords(allInputIndices, allOutputIndices, allPredicted, embedding):
+def convertDataBackToWords(allInputIndices, allOutputIndices, allPredicted):
     # This function first pairs the same inputs / predicteds with all simplifieds
     allInputIndicesSentenced = indicesNLTKToSentences(allInputIndices)
     allOutputIndicesSentenced = indicesNLTKToSentences(allOutputIndices)
@@ -35,5 +35,5 @@ def convertDataBackToWords(allInputIndices, allOutputIndices, allPredicted, embe
 
     allInputs = [d["input"] for d in returnType]
     allOutputs = [d["output"] for d in returnType]
-    allPredicted = [d["predicted"][0] for d in returnType]  # TODO: CHECK BUG HERE
+    allPredicted = [d["predicted"] for d in returnType]
     return allInputs, allOutputs, allPredicted

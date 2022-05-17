@@ -1,7 +1,7 @@
 import torch
 
+from projectFiles.constants import device
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import SOS
-from projectFiles.seq2seq.constants import device
 
 
 def getDecoderInput(size):

@@ -1,14 +1,14 @@
 import torch
 from torch import nn as nn
 
+from projectFiles.constants import device
 from projectFiles.helpers.embeddingType import embeddingType
 from projectFiles.preprocessing.gloveEmbeddings.gloveNetwork import GloveEmbeddings
-from projectFiles.seq2seq.constants import device
 
 
 class EncoderRNN(nn.Module):
 
-    def __init__(self, embeddingTokenSize, hiddenSize, embedding, noLayers=2, dropout=0.1):
+    def __init__(self, hiddenSize, embeddingTokenSize, embedding, noLayers=2, dropout=0.1):
         # print(input_size)
         super(EncoderRNN, self).__init__()
         self.n_layers = noLayers

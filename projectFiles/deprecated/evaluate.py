@@ -1,7 +1,7 @@
 import torch
 
+from projectFiles.constants import device
 from projectFiles.helpers.embeddingType import convertDataBackToWords
-from projectFiles.seq2seq.constants import device
 
 
 # from projectFiles.seq2seq.deprecated.loadEncoderDecoder import loadEncoderDecoder, loadDataForEncoderDecoder

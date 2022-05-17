@@ -1,8 +1,8 @@
 import torch
 
+from projectFiles.constants import device
 from projectFiles.helpers.embeddingType import embeddingType
 from projectFiles.preprocessing.gloveEmbeddings.loadGloveEmbeddings import gloveEmbeddings
-from projectFiles.seq2seq.constants import device
 
 
 # INPUT EMBEDDING HANDLES [EOS]

@@ -2,7 +2,7 @@
 import torch
 from transformers import BertTokenizerFast, BertForMaskedLM
 
-from projectFiles.seq2seq.constants import device
+from projectFiles.constants import device
 
 tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
 model = BertForMaskedLM.from_pretrained('bert-base-uncased',

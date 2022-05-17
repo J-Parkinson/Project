@@ -3,6 +3,7 @@ from random import random
 import torch
 from torch import optim, nn
 
+from projectFiles.constants import maxLengthSentence, device
 from projectFiles.evaluation.easse.calculateEASSE import computeValidation
 from projectFiles.helpers.DatasetSplits import datasetSplits
 from projectFiles.helpers.embeddingType import convertDataBackToWords
@@ -10,7 +11,6 @@ from projectFiles.helpers.epochData import epochData
 from projectFiles.helpers.epochTiming import Timer
 from projectFiles.helpers.getSpecialTokens import getDecoderInput
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList
-from projectFiles.seq2seq.constants import device, maxLengthSentence
 
 
 def maskNLLLoss(inp, target, mask):
@@ -225,8 +225,6 @@ def trainOneIteration(trainingMetadata):
         # trainingMetadata.maxLenSentence, trainingMetadata.embedding)
         printLossTotal += loss
         plotLossTotal += loss
-
-        #######REFACTORED UP TO HERE
 
         # We split print_every and plot_every here back into two
         # plot_every is controlled by batchNoGlobal, print_every is controlled by batchNo

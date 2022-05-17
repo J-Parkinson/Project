@@ -4,8 +4,8 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
+from projectFiles.constants import device
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import PAD
-from projectFiles.seq2seq.constants import device
 
 
 # Stores training, dev and test set splits as data loaders
@@ -52,14 +52,10 @@ class simplificationDatasetLoader():
     def _collateFunction(self, views):
         views.sort(key=lambda view: len(view.originalTokenized), reverse=True)
         inputEmbeddings, lengths = self.convertToInputEmbeddingIndicesGlove(views)
-        inputIndices = inputEmbeddings
         outputEmbeddings, mask, maxSimplifiedLength = self.convertToOutputEmbeddingIndicesGlove(views)
-        outputIndices = outputEmbeddings
 
         return {"inputEmbeddings": inputEmbeddings,
                 "outputEmbeddings": outputEmbeddings,
-                "inputIndices": inputIndices,
-                "outputIndices": outputIndices,
                 "lengths": lengths,
                 "maxSimplifiedLength": maxSimplifiedLength,
                 "mask": mask}

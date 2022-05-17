@@ -1,8 +1,8 @@
 import torch
 from torch import nn
 
+from projectFiles.constants import gloveWidth, device
 from projectFiles.preprocessing.gloveEmbeddings.loadGloveEmbeddings import gloveModel
-from projectFiles.seq2seq.constants import gloveWidth, device
 
 
 def getGloveEmbeddingNN(noTokens, embeddingSize=gloveWidth):

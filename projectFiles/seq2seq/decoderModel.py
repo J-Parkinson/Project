@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from projectFiles.constants import maxLengthSentence
 from projectFiles.helpers.embeddingType import embeddingType
 from projectFiles.preprocessing.gloveEmbeddings.gloveNetwork import GloveEmbeddings
 from projectFiles.seq2seq.attentionModel import AttentionModel
-from projectFiles.seq2seq.constants import maxLengthSentence
 
 
 # https://pytorch.org/tutorials/intermediate/seq2seq_translation_tutorial.html
@@ -46,4 +46,4 @@ class AttnDecoderRNN(nn.Module):
         concatGruContext = torch.cat((gruOutput, context), 1)
         output = torch.tanh(self.concat(concatGruContext))
         output = F.softmax(self.out(output), dim=1)
-        return output, hidden, attentionWeights
+        return output, hidden

@@ -2,8 +2,7 @@ import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from gensim.scripts.glove2word2vec import glove2word2vec
 
-from projectFiles.constants import baseLoc
-from projectFiles.seq2seq.constants import gloveWidth
+from projectFiles.constants import baseLoc, gloveWidth
 
 
 def createGloveWord2VecFormat():

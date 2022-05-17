@@ -1,11 +1,8 @@
-import csv
 import os
 
-from projectFiles.constants import projectLoc
-from projectFiles.evaluation.easse.calculateEASSE import computeAll
+from projectFiles.constants import projectLoc, maxLengthSentence
 from projectFiles.helpers.epochTiming import Timer
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList
-from projectFiles.seq2seq.constants import maxLengthSentence
 from projectFiles.seq2seq.plots import showPlot
 
 
@@ -74,50 +71,6 @@ class epochData:
                 yPos = [x[metric] for x in self.results]
                 showPlot(xPos, yPos, metric, self.fileSaveDir)
 
-    def savePlotData(self):
-        with open(f"{self.fileSaveDir}/plotData.txt", "w+") as file:
-            for x, y in self.plotLosses:
-                file.write(f"{x} {y}\n")
-
-        with open(f"{self.fileSaveDir}/plotDataDev.txt", "w+") as fileDev:
-            for x, y in self.plotDevLosses:
-                fileDev.write(f"{x} {y}\n")
-
-        if len(self.results) > 0:
-            metrics = list(self.results[0].keys())
-            metrics.remove("i")
-            for metric in metrics:
-                xPos = [x["i"] for x in self.results]
-                yPos = [x[metric] for x in self.results]
-                metricNameParts = metric.split("`")
-                metricName = metricNameParts[0]
-                if len(metricNameParts) > 1:
-                    metricNameComps = metric.split("`")[1].split("/")
-                    for yI, comp in enumerate(metricNameComps):
-                        with open(f"{self.fileSaveDir}/{metricName}_{comp}.txt", "w+") as fileDev:
-                            for x, y in zip(xPos, [yW[yI] for yW in yPos]):
-                                fileDev.write(f"{x} {y}\n")
-                else:
-                    with open(f"{self.fileSaveDir}/{metricName}.txt", "w+") as fileDev:
-                        for x, y in zip(xPos, yPos):
-                            fileDev.write(f"{x} {y}\n")
-
-    def saveTestData(self, allData):
-        with open(f"{self.fileSaveDir}/evaluatedSentences.csv", 'w', encoding="utf-8") as file:
-            spamWriter = csv.writer(file)
-            spamWriter.writerow(
-                ["Original", "Prediction"] + [f"Simplified {n}" for n in range(len(allData[0]["output"]))])
-            spamWriter.writerows([[line["input"], line["predicted"]] + line["output"] for line in allData])
-
-    def evaluateEASSE(self, allData):
-        allOriginal = [v["input"] for v in allData]
-        allSimplified = [v["output"] for v in allData]
-        allPredicted = [v["predicted"] for v in allData]
-
-        easseResults = computeAll(allOriginal, allSimplified, allPredicted)
-        with open(f"{self.fileSaveDir}/easse.txt", "w+") as file:
-            for k, v in easseResults.items():
-                file.write(f"{k}:{v}\n")
 
     def getAttributeStr(self, iLocal):
         return f"Epoch: {self.epochNo}\n" \

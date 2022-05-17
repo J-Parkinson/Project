@@ -1,5 +1,4 @@
-from projectFiles.evaluation.easse.calculateEASSE import calculateFleschKincaid, calculateBLEU, calculateBERTScore
-
+from projectFiles.evaluation.easse.calculateEASSE import calculateFleschKincaid, calculateBLEU
 
 def fleschKincaidInput(inputSentence, _1):
     return calculateFleschKincaid([inputSentence])
@@ -11,7 +10,3 @@ def differenceInFK(inputSentence, outputSentence):
 
 def bleu(inputSentence, outputSentence):
     return calculateBLEU([inputSentence], [[outputSentence]])
-
-
-def bertScore(inputSentence, outputSentence):
-    return calculateBERTScore([inputSentence], [[outputSentence]])

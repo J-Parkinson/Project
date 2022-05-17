@@ -15,28 +15,28 @@ from projectFiles.preprocessing.convertToPyTorch.simplificationDataToPyTorch imp
 from projectFiles.preprocessing.gloveEmbeddings.gloveNetwork import GloveEmbeddings
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import SOS, indicesReverseList
 
-USE_CUDA = torch.cuda.is_available()
-device = torch.device("cuda" if USE_CUDA else "cpu")
+USE_CUDA = torch.cuda.is_available()  #
+device = torch.device("cuda" if USE_CUDA else "cpu")  #
 
-embedding = embeddingType.indices
-clMD = curriculumLearningMetadata(curriculumLearningFlag.randomized)
-hiddenLayerWidthForIndices = 512
-restrict = 200000000
-batchSize = 64
-batchesBetweenValidation = 50
-minNoOccurencesForToken = 2
-hiddenSize = getHiddenSize(hiddenLayerWidthForIndices, embedding)
+embedding = embeddingType.indices  #
+clMD = curriculumLearningMetadata(curriculumLearningFlag.randomized)  #
+hiddenLayerWidthForIndices = 512  #
+restrict = 200000000  #
+batchSize = 64  #
+batchesBetweenValidation = 50  #
+minNoOccurencesForToken = 2  #
+hiddenSize = getHiddenSize(embedding, hiddenLayerWidthForIndices)  #
 
-maxLenSentence = getMaxLens(datasetToLoad.wikilarge, embedding, restrict=restrict)
+maxLenSentence = getMaxLens(datasetToLoad.wikilarge, restrict=restrict)  #
 
 # Also restricts length of max len sentence in each set (1-n and 1-1)
 datasetLoaded = simplificationDataToPyTorch(datasetToLoad.wikilarge, embedding, clMD, maxLen=maxLenSentence,
-                                            minOccurences=minNoOccurencesForToken)
+                                            minOccurences=minNoOccurencesForToken)  #
 print("Dataset loaded")
 # batching
-datasetBatches = simplificationDatasetLoader(datasetLoaded, embedding, batch_size=batchSize)
+datasetBatches = simplificationDatasetLoader(datasetLoaded, embedding, batch_size=batchSize)  #
 
-embeddingTokenSize = len(indicesReverseList)
+embeddingTokenSize = len(indicesReverseList)  #
 
 
 ######################################################################
@@ -553,19 +553,19 @@ def trainIters(datasetBatches, encoder, decoder, encoderOptimizer, decoderOptimi
 #
 
 # Configure models
-encoder_n_layers = 2
-decoder_n_layers = 2
-dropout = 0.1
-batch_size = 64
+encoder_n_layers = 2  #
+decoder_n_layers = 2  #
+dropout = 0.1  #
+batch_size = 64  #
 
 print('Building encoder and decoder ...')
 # Initialize word embeddings
 # Initialize encoder & decoder models
 # Use appropriate device
 encoder = EncoderRNN(embeddingTokenSize, hiddenSize, embeddingType.indices, noLayers=encoder_n_layers,
-                     dropout=dropout).to(device)
+                     dropout=dropout).to(device)  #
 decoder = AttnDecoderRNN(hiddenSize, embeddingTokenSize, embeddingType.indices, noLayers=decoder_n_layers,
-                         dropout=dropout).to(device)
+                         dropout=dropout).to(device)  #
 print('Models built and ready to go!')
 
 ######################################################################
@@ -580,12 +580,12 @@ print('Models built and ready to go!')
 #
 
 # Configure training/optimization
-clip = 50.0
-teacherForcingRatio = 1.0
-learning_rate = 0.0001
-decoder_learning_ratio = 5.0
-n_iteration = 10000
-print_every = 1
+clip = 50.0  #
+teacherForcingRatio = 1.0  #
+learning_rate = 0.0001  #
+decoder_learning_ratio = 5.0  #
+n_iteration = 10000  #
+print_every = 1  #
 
 # Ensure dropout layers are in train mode
 encoder.train()
@@ -593,8 +593,8 @@ decoder.train()
 
 # Initialize optimizers
 print('Building optimizers ...')
-encoderOptimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
-decoderOptimizer = optim.Adam(decoder.parameters(), lr=learning_rate * decoder_learning_ratio)
+encoderOptimizer = optim.Adam(encoder.parameters(), lr=learning_rate)  #
+decoderOptimizer = optim.Adam(decoder.parameters(), lr=learning_rate * decoder_learning_ratio)  #
 
 # If you have cuda, configure cuda to call
 for state in encoderOptimizer.state.values():
@@ -610,7 +610,7 @@ for state in decoderOptimizer.state.values():
 # Run training iterations
 print("Starting Training!")
 trainIters(datasetBatches, encoder, decoder, encoderOptimizer, decoderOptimizer,
-           embedding, n_iteration, batch_size, print_every, save_every)
+           embedding, n_iteration, batch_size, print_every, clip)
 ######################################################################
 # Conclusion
 # ----------

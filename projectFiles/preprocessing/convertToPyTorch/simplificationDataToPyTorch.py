@@ -1,10 +1,10 @@
+from projectFiles.constants import maxLengthSentence
 from projectFiles.helpers.DatasetToLoad import datasetToLoad
 from projectFiles.helpers.curriculumLearningFlag import curriculumLearningFlag, curriculumLearningMetadata
 from projectFiles.preprocessing.loadDatasets.loadAsset import loadAsset
 from projectFiles.preprocessing.loadDatasets.loadNewsela import loadNewsela
 from projectFiles.preprocessing.loadDatasets.loadWikiLarge import loadWikiLarge
 from projectFiles.preprocessing.loadDatasets.loadWikiSmall import loadWikiSmall
-from projectFiles.seq2seq.constants import maxLengthSentence
 from projectFiles.seq2seq.initialiseCurriculumLearning import initialiseCurriculumLearning
 
 
