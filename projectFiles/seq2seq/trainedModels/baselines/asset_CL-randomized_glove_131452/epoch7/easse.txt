@@ -1,0 +1,6 @@
+FK score|Flesch-Kincaid scores for predicted sentences:1.2069751013900252
+BLEU score|BLEU score for predicted vs simplified sentences:13.172213130514695
+BLEU score|Average BLEU score for predicted vs simplified sentences:6.438851914142181
+SARI macro score|SARI macro scores`Average/Add/Keep/Delete:(34.807590650828125, 0.9775788727401629, 36.369449259664044, 67.07574382008016)
+SARI micro score|SARI micro scores`Average/Add/Keep/Delete:(35.418283886543385, 0.9778820492225035, 37.85531081494285, 67.42165879546482)
+F1 score|Token-wise F1 score for predicted vs simplified sentences:36.90897776723273

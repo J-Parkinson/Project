@@ -5,7 +5,7 @@ from matplotlib import ticker
 from easse.quality_estimation import corpus_quality_estimation
 from easse.samsa import corpus_samsa
 from projectFiles.evaluation.easse.calculateEASSE import calculateFleschKincaid, calculateBLEU, \
-    calculateAverageSentenceBLEU, calculateBERTScore, calculateSARI, calculateF1Token
+    calculateAverageSentenceBLEU, calculateSARI, calculateF1Token
 
 
 def showAttention(input_sentence, output_words, attentions):

@@ -34,7 +34,7 @@ datasetLoaded = simplificationDataToPyTorch(datasetToLoad.wikilarge, embedding, 
                                             minOccurences=minNoOccurencesForToken)  #
 print("Dataset loaded")
 # batching
-datasetBatches = simplificationDatasetLoader(datasetLoaded, embedding, batch_size=batchSize)  #
+datasetBatches = simplificationDatasetLoader(datasetLoaded, batchSize=batchSize)  #
 
 embeddingTokenSize = len(indicesReverseList)  #
 

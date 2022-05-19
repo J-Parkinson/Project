@@ -1,0 +1,8 @@
+Epoch 1---------------
+Batch no in epoch:             51/283
+Batch no across epochs:        51/4245
+Dataset name:                  asset
+Curriculum learning for epoch: randomized
+Time ran:                      15.06371259689331
+Min loss average:              6.962439773694145
+Min dev loss:                  107.02579852175079

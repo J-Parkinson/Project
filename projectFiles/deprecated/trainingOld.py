@@ -4,10 +4,10 @@ import torch
 from torch import optim, nn
 
 from projectFiles.constants import maxLengthSentence, device
-from projectFiles.evaluation.easse.calculateEASSE import computeValidation
+from projectFiles.deprecated.epochData import epochData
+from projectFiles.evaluation.easse.calculateEASSE import computeValidationEvaluation
 from projectFiles.helpers.DatasetSplits import datasetSplits
 from projectFiles.helpers.embeddingType import convertDataBackToWords
-from projectFiles.helpers.epochData import epochData
 from projectFiles.helpers.epochTiming import Timer
 from projectFiles.helpers.getSpecialTokens import getDecoderInput
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import indicesReverseList
@@ -166,7 +166,7 @@ def validationEvaluationLoss(trainingMetadata, mode, dataLoader=None):
                                                                  embedding)
 
     if mode == datasetSplits.dev:
-        results = computeValidation(allInputs, allOutputs, allPredicted)
+        results = computeValidationEvaluation(allInputs, allOutputs, allPredicted)
 
         results["i"] = batchNoGlobal
 

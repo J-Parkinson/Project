@@ -1,0 +1,8 @@
+Epoch 1---------------
+Batch no in epoch:             251/3727
+Batch no across epochs:        251/14908
+Dataset name:                  wikiLarge
+Curriculum learning for epoch: randomized
+Time ran:                      175.2473111152649
+Min loss average:              7.156939273925431
+Min dev loss:                  93.27092155237621
