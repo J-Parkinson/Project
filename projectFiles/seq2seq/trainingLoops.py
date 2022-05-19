@@ -1,6 +1,10 @@
 import torch
 
-from projectFiles.seq2seq.devTestFunction import validationMultipleBatches
+from projectFiles.evaluation.saveEvaluatedSentences import saveTestData
+from projectFiles.helpers.SimplificationData.SimplificationDatasetLoaders import simplificationDatasetLoader
+from projectFiles.helpers.makeDir import makeDir
+from projectFiles.seq2seq.devTestFunction import validationMultipleBatches, evaluationMultipleBatches
+from projectFiles.seq2seq.initialiseCurriculumLearning import initialiseCurriculumLearning
 from projectFiles.seq2seq.trainingFunction import train
 
 
@@ -52,7 +56,7 @@ def trainOneEpoch(batches, batchSize, batchesBetweenTrainingPlots, batchesBetwee
         lossTotal += loss
 
         if iteration % batchesBetweenTrainingPlots == 1:
-            lossAverage = lossTotal / min(batchesBetweenValidationCheck, iteration)
+            lossAverage = lossTotal / min(batchesBetweenTrainingPlots, iteration)
             minLossAverage = lossAverage if not minLossAverage else min(minLossAverage, lossAverage)
             plotLosses[(iterationGlobal, iteration, epochNo)] = lossAverage
             print(f"Batch: {iteration}; Loss average: {lossAverage}")
@@ -104,16 +108,16 @@ def trainOneEpoch(batches, batchSize, batchesBetweenTrainingPlots, batchesBetwee
     return decoder, decoderOptimizer, encoder, encoderOptimizer, iterationGlobal, minLossAverage, minDevLoss, plotDevLosses, plotLosses, resultsGlobal, timer
 
 
-def trainMultipleEpochs(batches, batchSize, batchesBetweenTrainingPlots, batchesBetweenValidationCheck,
-                        curriculumLearningAfterFirstEpoch, curriculumLearningSpec,
-                        datasetName,
-                        decoder, decoderOptimizer, decoderNoLayers,
-                        encoder, encoderOptimizer,
-                        fileSaveDir,
-                        gradientClip,
-                        noEpochs,
-                        teacherForcingRatio,
-                        timer):
+def trainMultipleEpochsWithEvaluation(batches, batchSize, batchesBetweenTrainingPlots, batchesBetweenValidationCheck,
+                                      curriculumLearningAfterFirstEpoch, curriculumLearningSpec,
+                                      datasetName, datasetLoaded,
+                                      decoder, decoderOptimizer, decoderNoLayers,
+                                      encoder, encoderOptimizer,
+                                      fileSaveDir,
+                                      gradientClip,
+                                      noEpochs,
+                                      teacherForcingRatio,
+                                      timer):
     iterationGlobal = 0
     plotLosses = {}
     plotDevLosses = {}
@@ -122,9 +126,15 @@ def trainMultipleEpochs(batches, batchSize, batchesBetweenTrainingPlots, batches
     minLossAverage = None
 
     for epochNo in range(1, noEpochs + 1):
-        if epochNo == 2:
+        if epochNo == 2 and curriculumLearningSpec != curriculumLearningAfterFirstEpoch:
             curriculumLearningSpec = curriculumLearningAfterFirstEpoch
+            initialiseCurriculumLearning(datasetLoaded.train, curriculumLearningSpec)
+            batches = simplificationDatasetLoader(datasetLoaded, batchSize=batchSize)
+            print("Curric learning changed")
+
         print(f"EPOCH {epochNo}")
+        epochFileSaveDir = makeDir(f"{fileSaveDir}/epoch{epochNo}", full=True)
+
         decoder, decoderOptimizer, encoder, encoderOptimizer, iterationGlobal, minLossAverage, minDevLoss, \
         plotDevLosses, plotLosses, resultsGlobal, timer = trainOneEpoch(batches, batchSize,
                                                                         batchesBetweenTrainingPlots,
@@ -134,7 +144,7 @@ def trainMultipleEpochs(batches, batchSize, batchesBetweenTrainingPlots, batches
                                                                         decoder, decoderOptimizer, decoderNoLayers,
                                                                         encoder, encoderOptimizer,
                                                                         epochNo,
-                                                                        fileSaveDir,
+                                                                        epochFileSaveDir,
                                                                         gradientClip,
                                                                         iterationGlobal,
                                                                         minDevLoss, minLossAverage,
@@ -143,4 +153,9 @@ def trainMultipleEpochs(batches, batchSize, batchesBetweenTrainingPlots, batches
                                                                         resultsGlobal,
                                                                         teacherForcingRatio,
                                                                         timer)
+
+        allData, results = evaluationMultipleBatches(batches.testDL, encoder, decoder, decoderNoLayers,
+                                                     batchSize)
+        saveTestData(allData, results, epochFileSaveDir)
+
     return decoder, encoder, iterationGlobal, plotDevLosses, plotLosses, resultsGlobal

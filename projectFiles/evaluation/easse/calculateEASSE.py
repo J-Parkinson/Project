@@ -24,7 +24,7 @@ def calculateF1Token(originalSentences, referenceSentenceSets):
     return corpus_f1_token(sys_sents=originalSentences, refs_sents=referenceSentenceSets)
 
 #Calculates metrics for the validation set, stored in epochData
-def computeValidation(allOriginal, allSimplifiedSets, allPredicted):
+def computeValidationEvaluation(allOriginal, allSimplifiedSets, allPredicted):
     allResults = {}
     allSimplifiedSetsRefSent = [list(sent) for sent in zip(*allSimplifiedSets)]
 

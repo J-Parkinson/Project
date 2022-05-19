@@ -1,7 +1,7 @@
 import torch
 
 from projectFiles.constants import device
-from projectFiles.evaluation.easse.calculateEASSE import computeValidation
+from projectFiles.evaluation.easse.calculateEASSE import computeValidationEvaluation
 from projectFiles.helpers.embeddingType import convertDataBackToWords
 from projectFiles.preprocessing.indicesEmbeddings.loadIndexEmbeddings import SOS
 from projectFiles.seq2seq.lossFunction import maskNLLLoss
@@ -31,7 +31,7 @@ def validationMultipleBatches(batches, encoder, decoder, decoderNoLayers, batchS
 
     allInputs, allOutputs, allPredicted = convertDataBackToWords(allInputEmbeddings, allOutputEmbeddings, allPredicted)
 
-    results = computeValidation(allInputs, allOutputs, allPredicted)
+    results = computeValidationEvaluation(allInputs, allOutputs, allPredicted)
 
     print("Validation calculated-----------------------------")
 
@@ -61,7 +61,7 @@ def evaluationMultipleBatches(batches, encoder, decoder, decoderNoLayers, batchS
 
     allInputs, allOutputs, allPredicted = convertDataBackToWords(allInputEmbeddings, allOutputEmbeddings, allPredicted)
 
-    results = computeValidation(allInputs, allOutputs, allPredicted)
+    results = computeValidationEvaluation(allInputs, allOutputs, allPredicted)
 
     allData = [{"input": inp, "outputs": out, "predicted": pred} for inp, out, pred in
                zip(allInputs, allOutputs, allPredicted)]

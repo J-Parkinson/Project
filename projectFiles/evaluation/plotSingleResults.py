@@ -35,8 +35,8 @@ def showPlot(x, y, title, noBatchesInEpoch, noEpochs, saveLoc):
         plt.tight_layout()
 
         # Save the figure
-        plt.show()
         plt.savefig(f"{saveLoc}/loss_{time()}.png", dpi=300)
+        plt.show()
     else:
         titleLegend = title[1].split("/")
         ax1 = plt.subplot(1, 1, 1)
@@ -69,8 +69,8 @@ def showPlot(x, y, title, noBatchesInEpoch, noEpochs, saveLoc):
         plt.tight_layout()
 
         # Save the figure
-        plt.show()
         plt.savefig(f"{saveLoc}/loss_{time()}.png", dpi=300)
+        plt.show()
 
 
 def printPlots(results, plotLosses, plotDevLosses, datasetName, embedding, fileSaveDir, trainingBatchesSize, noEpochs):

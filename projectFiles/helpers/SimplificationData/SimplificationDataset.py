@@ -1,4 +1,4 @@
-from random import random
+from random import random, choice
 
 from torch.utils.data import Dataset
 
@@ -22,7 +22,8 @@ class simplificationDataset(Dataset):
         self.curriculumLearning = flag
         if flag in [curriculumLearningFlag.randomized,
                     curriculumLearningFlag.ordered,
-                    curriculumLearningFlag.evaluationMode]:
+                    curriculumLearningFlag.evaluationMode,
+                    curriculumLearningFlag.sampled]:
             self.lambdaFunc = lambda _1, _2: random()
         else:
             self.lambdaFunc = lambdaFunc
@@ -88,7 +89,7 @@ class simplificationDataset(Dataset):
             elif self.curriculumLearning == curriculumLearningFlag.sampledFlatCL:
                 (xIndex, yIndex) = self.curriculumLearningIndices[self._sampleFlat()]
             elif self.curriculumLearning == curriculumLearningFlag.sampled:
-                (xIndex, yIndex) = random.choice(self.curriculumLearningIndices)
+                (xIndex, yIndex) = choice(self.curriculumLearningIndices)
             else:
                 (xIndex, yIndex) = self.curriculumLearningIndices[idx]
             return self.dataset[xIndex].getView(yIndex)

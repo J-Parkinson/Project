@@ -1,4 +1,4 @@
-def savePlotData(plotLosses, plotDevLosses, results, fileSaveDir):
+def savePlotData(results, plotLosses, plotDevLosses, fileSaveDir):
     with open(f"{fileSaveDir}/plotData.txt", "w+") as file:
         for x, y in plotLosses.items():
             file.write(f"{x} {y}\n")

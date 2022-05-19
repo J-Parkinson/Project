@@ -60,13 +60,12 @@ class simplificationDatasetLoader():
                 "maxSimplifiedLength": maxSimplifiedLength,
                 "mask": mask}
 
-    def __init__(self, simpDS, embedding, batch_size=128):
+    def __init__(self, simpDS, batchSize=128):
         self.dataset = simpDS.dataset
-        self.embedding = embedding
-        self.batch_size = batch_size
-        self.trainDL = DataLoader(simpDS.train, batch_size=batch_size, collate_fn=self._collateFunction, shuffle=False,
+        self.batch_size = batchSize
+        self.trainDL = DataLoader(simpDS.train, batch_size=batchSize, collate_fn=self._collateFunction, shuffle=False,
                                   drop_last=True)
-        self.devDL = DataLoader(simpDS.dev, batch_size=batch_size, collate_fn=self._collateFunction, shuffle=False,
+        self.devDL = DataLoader(simpDS.dev, batch_size=batchSize, collate_fn=self._collateFunction, shuffle=False,
                                 drop_last=True)
-        self.testDL = DataLoader(simpDS.test, batch_size=batch_size, collate_fn=self._collateFunction, shuffle=False,
+        self.testDL = DataLoader(simpDS.test, batch_size=batchSize, collate_fn=self._collateFunction, shuffle=False,
                                  drop_last=True)
