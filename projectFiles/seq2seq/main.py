@@ -1,6 +1,4 @@
-from projectFiles.curriculumLearningFunctions.difficultyOfWords import numberOfComplexWordInInput
-from projectFiles.curriculumLearningFunctions.length import noTokensInInput, differenceInLengthOfInputAndOutput
-from projectFiles.curriculumLearningFunctions.sentenceScoreMetrics import differenceInFK, fleschKincaidInput
+from projectFiles.curriculumLearningFunctions.sentenceScoreMetrics import fleschKincaidInput
 from projectFiles.evaluation.plotSingleResults import printPlots
 from projectFiles.evaluation.saveResults import savePlotData
 from projectFiles.helpers.DatasetToLoad import datasetToLoad, dsName
@@ -71,14 +69,14 @@ def runE2E(dataset, embedding, curriculumLearningSpec):
 # Baseline model
 
 # Different sorting funcs
-runE2E(datasetToLoad.wikilarge, embeddingType.glove,
-       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=numberOfComplexWordInInput))
-runE2E(datasetToLoad.wikilarge, embeddingType.glove,
-       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=noTokensInInput))
-runE2E(datasetToLoad.wikilarge, embeddingType.glove,
-       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=differenceInLengthOfInputAndOutput))
-runE2E(datasetToLoad.wikilarge, embeddingType.glove,
-       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=differenceInFK))
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
+#       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=numberOfComplexWordInInput))
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
+#       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=noTokensInInput))
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
+#       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=differenceInLengthOfInputAndOutput))
+# runE2E(datasetToLoad.wikilarge, embeddingType.glove,
+#       curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=differenceInFK))
 runE2E(datasetToLoad.wikilarge, embeddingType.glove,
        curriculumLearningMetadata(curriculumLearningFlag.orderedCL, lambdaFunc=fleschKincaidInput))
 #

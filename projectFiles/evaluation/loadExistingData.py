@@ -10,7 +10,8 @@ metrics = [("BLEU score for predicted vs simplified sentences", "BLEU"),
            ("Average SARI micro scores", "SARI micro average"),
            ("Delete SARI micro scores", "SARI micro delete"),
            ("Keep SARI micro scores", "SARI micro keep"),
-           ("Token-wise F1 score for predicted vs simplified sentences", "Token F1")]
+           ("Token-wise F1 score for predicted vs simplified sentences", "Token F1"),
+           ()]
 
 metricsLines = [("BLEU score for predicted vs simplified sentences", "BLEU"),
                 ("Flesch-Kincaid scores for predicted sentences", "FK score"),

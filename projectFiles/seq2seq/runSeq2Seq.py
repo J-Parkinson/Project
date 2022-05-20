@@ -42,8 +42,13 @@ def runSeq2Seq(dataset, datasetName, embedding, curriculumLearningSpec, hiddenLa
 
     timer = Timer()
 
+    if curriculumLearningSpec.lambdaFunc:
+        addCurricFuncName = f'{curriculumLearningSpec.lambdaFunc.__name__}_'
+    else:
+        addCurricFuncName = ""
+
     fileSaveDir = makeDir(f"{locationToSaveToFromProjectFiles}{datasetName}_CL-{curriculumLearningSpec.flag.name}"
-                          f"_{embedding.name}_{timer.getStartTime().replace(':', '')}")
+                          f"_{embedding.name}_{addCurricFuncName}{timer.getStartTime().replace(':', '')}")
     returnFileSaveDir = f"{projectLoc}/{fileSaveDir}"
 
     encoderOptimizer = optim.Adam(encoder.parameters(), lr=learningRate)

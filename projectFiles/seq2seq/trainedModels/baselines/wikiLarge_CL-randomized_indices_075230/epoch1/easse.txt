@@ -4,3 +4,4 @@ BLEU score|Average BLEU score for predicted vs simplified sentences:14.768284152
 SARI macro score|SARI macro scores`Average/Add/Keep/Delete:(27.955123673005527, 0.9884045156427348, 37.38635723887349, 45.490609264500364)
 SARI micro score|SARI micro scores`Average/Add/Keep/Delete:(28.692523810702284, 0.9885369866062917, 39.36537063272711, 45.72366381277345)
 F1 score|Token-wise F1 score for predicted vs simplified sentences:44.68286614536523
+BERTscore|BERTscore for predicted vs simplified sentences`Precision/Recall/F1:(0.6221086978912354,0.5795930624008179,0.6001242995262146)
